@@ -55,6 +55,7 @@ jobs:
     - name: Build for ${{ matrix.arch }}
       run: |
         xcodebuild clean build \
+          -project WorklogApp.xcodeproj \
           -scheme WorklogApp \
           -destination '${{ matrix.destination }}' \
           -configuration Release \
@@ -127,6 +128,7 @@ jobs:
     - name: Build Universal Binary
       run: |
         xcodebuild clean build \
+          -project WorklogApp.xcodeproj \
           -scheme WorklogApp \
           -destination 'platform=macOS' \
           -configuration Release \
