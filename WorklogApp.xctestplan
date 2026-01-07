@@ -1,0 +1,54 @@
+{
+  "configurations" : [
+    {
+      "id" : "D1B8E8F1-4F3A-4B5C-9D2E-1A2B3C4D5E6F",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : {
+      "targets" : [
+        {
+          "containerPath" : "container:WorklogApp.xcodeproj",
+          "identifier" : "WorklogApp",
+          "name" : "WorklogApp"
+        }
+      ]
+    },
+    "environmentVariableEntries" : [
+      {
+        "key" : "UI-Testing",
+        "value" : "1"
+      }
+    ],
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:WorklogApp.xcodeproj",
+      "identifier" : "WorklogApp",
+      "name" : "WorklogApp"
+    },
+    "testExecutionOrdering" : "random",
+    "testTimeoutsEnabled" : true,
+    "maximumTestExecutionTimeAllowance" : 10
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:WorklogApp.xcodeproj",
+        "identifier" : "WorklogAppTests",
+        "name" : "WorklogAppTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:WorklogApp.xcodeproj",
+        "identifier" : "WorklogAppUITests",
+        "name" : "WorklogAppUITests"
+      }
+    }
+  ],
+  "version" : 1
+}
