@@ -1,0 +1,652 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 70;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1F1F8B1E2D8F0001007D0001 /* WorklogAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F1F8B0C2D8F0001007D0001 /* WorklogAppApp.swift */; };
+		1F1F8B1F2D8F0001007D0001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F1F8B0D2D8F0001007D0001 /* ContentView.swift */; };
+		1F1F8B202D8F0001007D0001 /* Ticket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F1F8B0E2D8F0001007D0001 /* Ticket.swift */; };
+		1F1F8B212D8F0001007D0001 /* TimeEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F1F8B0F2D8F0001007D0001 /* TimeEntry.swift */; };
+		1FF5E9C22E00000100123456 /* Project.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FF5E9C12E00000100123456 /* Project.swift */; };
+		66F0B6382F0D3320001A90C7 /* Iteration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66F0B6372F0D3320001A90C7 /* Iteration.swift */; };
+		66F0B6622F0E81D9001A90C7 /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66F0B6612F0E81D9001A90C7 /* StatusBarController.swift */; };
+		66F0B6642F0E99AB001A90C7 /* TimerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66F0B6632F0E99AB001A90C7 /* TimerState.swift */; };
+		66F0B6662F0EA1A4001A90C7 /* StatusBarMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66F0B6652F0EA1A4001A90C7 /* StatusBarMenuView.swift */; };
+		66F0B6682F0EA1AF001A90C7 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 66F0B6672F0EA1AF001A90C7 /* Info.plist */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		66F0B6492F0D3ADE001A90C7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1F1F8B012D8F0001007D0001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1F1F8B062D8F0001007D0001;
+			remoteInfo = WorklogApp;
+		};
+		66F0B6582F0D3B1A001A90C7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1F1F8B012D8F0001007D0001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1F1F8B062D8F0001007D0001;
+			remoteInfo = WorklogApp;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		1F1F8B072D8F0001007D0001 /* WorklogApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WorklogApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1F1F8B0C2D8F0001007D0001 /* WorklogAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorklogAppApp.swift; sourceTree = "<group>"; };
+		1F1F8B0D2D8F0001007D0001 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		1F1F8B0E2D8F0001007D0001 /* Ticket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Ticket.swift; sourceTree = "<group>"; };
+		1F1F8B0F2D8F0001007D0001 /* TimeEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeEntry.swift; sourceTree = "<group>"; };
+		1F1F8B122D8F0001007D0001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		1FF5E9C12E00000100123456 /* Project.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Project.swift; sourceTree = "<group>"; };
+		66F0B6372F0D3320001A90C7 /* Iteration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Iteration.swift; sourceTree = "<group>"; };
+		66F0B6452F0D3ADE001A90C7 /* WorklogAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WorklogAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		66F0B6522F0D3B1A001A90C7 /* WorklogAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WorklogAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		66F0B6612F0E81D9001A90C7 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
+		66F0B6632F0E99AB001A90C7 /* TimerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerState.swift; sourceTree = "<group>"; };
+		66F0B6652F0EA1A4001A90C7 /* StatusBarMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarMenuView.swift; sourceTree = "<group>"; };
+		66F0B6672F0EA1AF001A90C7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		66F0B6462F0D3ADE001A90C7 /* WorklogAppTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = WorklogAppTests; sourceTree = "<group>"; };
+		66F0B6532F0D3B1A001A90C7 /* WorklogAppUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = WorklogAppUITests; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1F1F8B032D8F0001007D0001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		66F0B6422F0D3ADE001A90C7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		66F0B64F2F0D3B1A001A90C7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1F1F8B002D8F0000007D0001 = {
+			isa = PBXGroup;
+			children = (
+				1F1F8B0B2D8F0001007D0001 /* WorklogApp */,
+				66F0B6462F0D3ADE001A90C7 /* WorklogAppTests */,
+				66F0B6532F0D3B1A001A90C7 /* WorklogAppUITests */,
+				1F1F8B082D8F0001007D0001 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		1F1F8B082D8F0001007D0001 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1F1F8B072D8F0001007D0001 /* WorklogApp.app */,
+				66F0B6452F0D3ADE001A90C7 /* WorklogAppTests.xctest */,
+				66F0B6522F0D3B1A001A90C7 /* WorklogAppUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		1F1F8B0B2D8F0001007D0001 /* WorklogApp */ = {
+			isa = PBXGroup;
+			children = (
+				66F0B6672F0EA1AF001A90C7 /* Info.plist */,
+				66F0B6652F0EA1A4001A90C7 /* StatusBarMenuView.swift */,
+				66F0B6632F0E99AB001A90C7 /* TimerState.swift */,
+				66F0B6612F0E81D9001A90C7 /* StatusBarController.swift */,
+				1F1F8B0C2D8F0001007D0001 /* WorklogAppApp.swift */,
+				1F1F8B0D2D8F0001007D0001 /* ContentView.swift */,
+				1F1F8B162D8F0001007D0001 /* Models */,
+				1F1F8B122D8F0001007D0001 /* Assets.xcassets */,
+			);
+			path = WorklogApp;
+			sourceTree = "<group>";
+		};
+		1F1F8B162D8F0001007D0001 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				66F0B6372F0D3320001A90C7 /* Iteration.swift */,
+				1FF5E9C12E00000100123456 /* Project.swift */,
+				1F1F8B0E2D8F0001007D0001 /* Ticket.swift */,
+				1F1F8B0F2D8F0001007D0001 /* TimeEntry.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1F1F8B062D8F0001007D0001 /* WorklogApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1F1F8B152D8F0001007D0001 /* Build configuration list for PBXNativeTarget "WorklogApp" */;
+			buildPhases = (
+				1F1F8B022D8F0001007D0001 /* Sources */,
+				1F1F8B032D8F0001007D0001 /* Frameworks */,
+				1F1F8B042D8F0001007D0001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = WorklogApp;
+			productName = WorklogApp;
+			productReference = 1F1F8B072D8F0001007D0001 /* WorklogApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+		66F0B6442F0D3ADE001A90C7 /* WorklogAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 66F0B64B2F0D3ADE001A90C7 /* Build configuration list for PBXNativeTarget "WorklogAppTests" */;
+			buildPhases = (
+				66F0B6412F0D3ADE001A90C7 /* Sources */,
+				66F0B6422F0D3ADE001A90C7 /* Frameworks */,
+				66F0B6432F0D3ADE001A90C7 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				66F0B64A2F0D3ADE001A90C7 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				66F0B6462F0D3ADE001A90C7 /* WorklogAppTests */,
+			);
+			name = WorklogAppTests;
+			packageProductDependencies = (
+			);
+			productName = WorklogAppTests;
+			productReference = 66F0B6452F0D3ADE001A90C7 /* WorklogAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		66F0B6512F0D3B1A001A90C7 /* WorklogAppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 66F0B65A2F0D3B1A001A90C7 /* Build configuration list for PBXNativeTarget "WorklogAppUITests" */;
+			buildPhases = (
+				66F0B64E2F0D3B1A001A90C7 /* Sources */,
+				66F0B64F2F0D3B1A001A90C7 /* Frameworks */,
+				66F0B6502F0D3B1A001A90C7 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				66F0B6592F0D3B1A001A90C7 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				66F0B6532F0D3B1A001A90C7 /* WorklogAppUITests */,
+			);
+			name = WorklogAppUITests;
+			packageProductDependencies = (
+			);
+			productName = WorklogAppUITests;
+			productReference = 66F0B6522F0D3B1A001A90C7 /* WorklogAppUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1F1F8B012D8F0001007D0001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					1F1F8B062D8F0001007D0001 = {
+						ProvisioningStyle = Automatic;
+					};
+					66F0B6442F0D3ADE001A90C7 = {
+						CreatedOnToolsVersion = 26.0.1;
+						TestTargetID = 1F1F8B062D8F0001007D0001;
+					};
+					66F0B6512F0D3B1A001A90C7 = {
+						CreatedOnToolsVersion = 26.0.1;
+						TestTargetID = 1F1F8B062D8F0001007D0001;
+					};
+				};
+			};
+			buildConfigurationList = 1F1F8B052D8F0001007D0001 /* Build configuration list for PBXProject "WorklogApp" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 1F1F8B002D8F0000007D0001;
+			productRefGroup = 1F1F8B082D8F0001007D0001 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1F1F8B062D8F0001007D0001 /* WorklogApp */,
+				66F0B6442F0D3ADE001A90C7 /* WorklogAppTests */,
+				66F0B6512F0D3B1A001A90C7 /* WorklogAppUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1F1F8B042D8F0001007D0001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				66F0B6682F0EA1AF001A90C7 /* Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		66F0B6432F0D3ADE001A90C7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		66F0B6502F0D3B1A001A90C7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1F1F8B022D8F0001007D0001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				66F0B6662F0EA1A4001A90C7 /* StatusBarMenuView.swift in Sources */,
+				1F1F8B212D8F0001007D0001 /* TimeEntry.swift in Sources */,
+				66F0B6622F0E81D9001A90C7 /* StatusBarController.swift in Sources */,
+				1FF5E9C22E00000100123456 /* Project.swift in Sources */,
+				1F1F8B202D8F0001007D0001 /* Ticket.swift in Sources */,
+				66F0B6382F0D3320001A90C7 /* Iteration.swift in Sources */,
+				66F0B6642F0E99AB001A90C7 /* TimerState.swift in Sources */,
+				1F1F8B1F2D8F0001007D0001 /* ContentView.swift in Sources */,
+				1F1F8B1E2D8F0001007D0001 /* WorklogAppApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		66F0B6412F0D3ADE001A90C7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		66F0B64E2F0D3B1A001A90C7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		66F0B64A2F0D3ADE001A90C7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1F1F8B062D8F0001007D0001 /* WorklogApp */;
+			targetProxy = 66F0B6492F0D3ADE001A90C7 /* PBXContainerItemProxy */;
+		};
+		66F0B6592F0D3B1A001A90C7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1F1F8B062D8F0001007D0001 /* WorklogApp */;
+			targetProxy = 66F0B6582F0D3B1A001A90C7 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1F1F8B132D8F0001007D0001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		1F1F8B142D8F0001007D0001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		1F1F8B182D8F0001007D0001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = WorklogApp;
+				INFOPLIST_KEY_CFBundleIdentifier = com.example.WorklogApp;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is not required.";
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cz.bicisteadm.WorklogApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		1F1F8B192D8F0001007D0001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = WorklogApp;
+				INFOPLIST_KEY_CFBundleIdentifier = com.example.WorklogApp;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is not required.";
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cz.bicisteadm.WorklogApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		66F0B64C2F0D3ADE001A90C7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.7;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cz.bicisteadm.WorklogAppTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WorklogApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/WorklogApp";
+			};
+			name = Debug;
+		};
+		66F0B64D2F0D3ADE001A90C7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.7;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cz.bicisteadm.WorklogAppTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WorklogApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/WorklogApp";
+			};
+			name = Release;
+		};
+		66F0B65B2F0D3B1A001A90C7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.7;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cz.bicisteadm.WorklogAppUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = WorklogApp;
+			};
+			name = Debug;
+		};
+		66F0B65C2F0D3B1A001A90C7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.7;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cz.bicisteadm.WorklogAppUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = WorklogApp;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1F1F8B052D8F0001007D0001 /* Build configuration list for PBXProject "WorklogApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1F1F8B132D8F0001007D0001 /* Debug */,
+				1F1F8B142D8F0001007D0001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		1F1F8B152D8F0001007D0001 /* Build configuration list for PBXNativeTarget "WorklogApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1F1F8B182D8F0001007D0001 /* Debug */,
+				1F1F8B192D8F0001007D0001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		66F0B64B2F0D3ADE001A90C7 /* Build configuration list for PBXNativeTarget "WorklogAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				66F0B64C2F0D3ADE001A90C7 /* Debug */,
+				66F0B64D2F0D3ADE001A90C7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		66F0B65A2F0D3B1A001A90C7 /* Build configuration list for PBXNativeTarget "WorklogAppUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				66F0B65B2F0D3B1A001A90C7 /* Debug */,
+				66F0B65C2F0D3B1A001A90C7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 1F1F8B012D8F0001007D0001 /* Project object */;
+}

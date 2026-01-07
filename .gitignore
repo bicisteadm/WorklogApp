@@ -26,7 +26,7 @@ xcuserdata/
 Packages/
 Package.pins
 Package.resolved
-*.xcodeproj
+# *.xcodeproj - COMMENTED OUT: We need the .xcodeproj for CI/CD
 xcuserdata/
 DerivedData/
 .swiftpm/config/registries.json
