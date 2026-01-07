@@ -1,0 +1,168 @@
+name: Build WorklogApp
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  BUNDLE_ID: cz.bicisteadm.WorklogApp
+
+jobs:
+  build:
+    name: Build for ${{ matrix.arch }}
+    runs-on: macos-14
+    
+    strategy:
+      matrix:
+        arch: [arm64, x86_64]
+        include:
+          - arch: arm64
+            destination: 'platform=macOS,arch=arm64'
+            artifact_name: 'WorklogApp-arm64'
+          - arch: x86_64
+            destination: 'platform=macOS,arch=x86_64'
+            artifact_name: 'WorklogApp-x86_64'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
+    
+    - name: Show Xcode version
+      run: xcodebuild -version
+    
+    - name: Set version from tag or commit
+      id: version
+      run: |
+        if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/v}
+          BUILD_NUMBER=${{ github.run_number }}
+        else
+          VERSION="1.0.0"
+          BUILD_NUMBER=${{ github.run_number }}
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "build=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+        echo "Version: $VERSION Build: $BUILD_NUMBER"
+    
+    - name: Build for ${{ matrix.arch }}
+      run: |
+        xcodebuild clean build \
+          -scheme WorklogApp \
+          -destination '${{ matrix.destination }}' \
+          -configuration Release \
+          -derivedDataPath DerivedData \
+          ONLY_ACTIVE_ARCH=NO \
+          CODE_SIGN_IDENTITY="-" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          MARKETING_VERSION=${{ steps.version.outputs.version }} \
+          CURRENT_PROJECT_VERSION=${{ steps.version.outputs.build }} \
+          PRODUCT_BUNDLE_IDENTIFIER=${{ env.BUNDLE_ID }}
+    
+    - name: Create application archive
+      run: |
+        cd DerivedData/Build/Products/Release
+        zip -r ${{ matrix.artifact_name }}.zip WorklogApp.app
+        mv ${{ matrix.artifact_name }}.zip ${{ github.workspace }}/
+    
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact_name }}
+        path: ${{ matrix.artifact_name }}.zip
+        retention-days: 30
+    
+    - name: Get app version info
+      if: matrix.arch == 'arm64'
+      id: appversion
+      run: |
+        VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "DerivedData/Build/Products/Release/WorklogApp.app/Contents/Info.plist")
+        BUILD=$(/usr/libexec/PlistBuddy -c "Print CFBundleVersion" "DerivedData/Build/Products/Release/WorklogApp.app/Contents/Info.plist")
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "build=$BUILD" >> $GITHUB_OUTPUT
+        echo "App version: $VERSION ($BUILD)"
+    
+    - name: Display build info
+      run: |
+        echo "Build completed for ${{ matrix.arch }}"
+        echo "Architecture: ${{ matrix.arch }}"
+        echo "Artifact: ${{ matrix.artifact_name }}.zip"
+        echo "Version: ${{ steps.version.outputs.version }}"
+        echo "Build: ${{ steps.version.outputs.build }}"
+
+  universal-build:
+    name: Create Universal Binary
+    runs-on: macos-14
+    needs: build
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
+    
+    - name: Set version from tag or commit
+      id: version
+      run: |
+        if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/v}
+          BUILD_NUMBER=${{ github.run_number }}
+        else
+          VERSION="1.0.0"
+          BUILD_NUMBER=${{ github.run_number }}
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "build=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+        echo "Version: $VERSION Build: $BUILD_NUMBER"
+    
+    - name: Build Universal Binary
+      run: |
+        xcodebuild clean build \
+          -scheme WorklogApp \
+          -destination 'platform=macOS' \
+          -configuration Release \
+          -derivedDataPath DerivedData \
+          ONLY_ACTIVE_ARCH=NO \
+          CODE_SIGN_IDENTITY="-" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          ARCHS="arm64 x86_64" \
+          MARKETING_VERSION=${{ steps.version.outputs.version }} \
+          CURRENT_PROJECT_VERSION=${{ steps.version.outputs.build }} \
+          PRODUCT_BUNDLE_IDENTIFIER=${{ env.BUNDLE_ID }}
+    
+    - name: Verify Universal Binary
+      run: |
+        echo "Binary architectures:"
+        lipo -info DerivedData/Build/Products/Release/WorklogApp.app/Contents/MacOS/WorklogApp
+    
+    - name: Create universal archive
+      run: |
+        cd DerivedData/Build/Products/Release
+        zip -r WorklogApp-Universal.zip WorklogApp.app
+        mv WorklogApp-Universal.zip ${{ github.workspace }}/
+    
+    - name: Upload universal build
+      uses: actions/upload-artifact@v4
+      with:
+        name: WorklogApp-Universal
+        path: WorklogApp-Universal.zip
+        retention-days: 30
+    
+    - name: Build summary
+      run: |
+        echo "Universal build completed successfully"
+        echo "Version: ${{ steps.version.outputs.version }}"
+        echo "Build: ${{ steps.version.outputs.build }}"
+        echo "Bundle ID: ${{ env.BUNDLE_ID }}"
+        echo "Architectures: arm64 + x86_64"
+        echo "Artifact: WorklogApp-Universal.zip"
