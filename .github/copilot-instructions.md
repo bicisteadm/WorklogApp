@@ -1,31 +1,50 @@
-- [x] Verify that the copilot-instructions.md file in the .github directory is created. (hotovo)
+# WorklogApp — AI Agent Instructions
 
-- [x] Clarify Project Requirements (macOS SwiftUI, SwiftData perzistence, logování času)
+## Project Overview
+macOS-only menu bar time-tracking app. No Dock icon — runs via `MenuBarExtra`. Built with **SwiftUI + SwiftData** (SQLite at `~/Library/Application Support/WorklogApp.sqlite`). Minimum deployment target: macOS 14.0.
 
-- [x] Scaffold the Project (Xcode projekt, SwiftUI pohledy, modely)
+## Architecture
 
-- [x] Customize the Project (přechod na SwiftData, úprava UI datových vazeb)
+### Data Model (`WorklogApp/Models/`)
+Hierarchy: **Project → Iteration → Ticket → TimeEntry**
+- `Project` owns `Ticket[]` and `Iteration[]` (cascade delete)
+- `Ticket` owns `TimeEntry[]` (cascade delete). `ticketId` is **optional/informational** (not unique, not a primary key — SwiftData auto-generates the PK)
+- `Iteration` nullifies tickets on delete; has `IterationType` enum (`.sprint` | `.milestone`)
+- `TimeEntry.hours` stores duration as **decimal hours** (1.5 = 1h 30min). Display uses `formatDuration()` → `"Xh Ymin Zs"` format everywhere
 
-- [x] Install Required Extensions (není potřeba)
+### Key Components
+- **`WorklogAppApp.swift`** — App entry point. `MenuBarExtra` (menu style) + `WindowGroup(id: "main")`. Shared `TimerState` via `@StateObject`
+- **`ContentView.swift`** — Main window. `NavigationSplitView` with 3 columns: sidebar (projects/iterations) → ticket list → ticket detail. Contains all view structs (`NewTicketView`, `EditTicketView`, `TicketDetailView`, `ReportsView`, `BulkTicketView`, etc.) in a single file
+- **`TimerState.swift`** — `ObservableObject` shared across menu bar and main window. Timer runs on `RunLoop.common` mode so it ticks while menus are open
+- **`StatusBarController.swift`** — AppKit `NSStatusItem` wrapper with Combine observations
+- **`StatusBarMenuView.swift`** — SwiftUI menu bar dropdown content
 
-- [ ] Compile the Project
+### UI Patterns
+- Inline editing in `TicketDetailView` (toggle `isEditing` state) — **not** sheet-based
+- `.id(ticket.id)` on `TicketDetailView` forces view recreation on ticket switch (resets edit mode)
+- `@State` values initialized in `init` via `_propertyName = State(initialValue:)` to avoid `onAppear`/`onChange` race conditions (see `NewTicketView`, `EditTicketView`)
+- `.textSelection(.enabled)` on all read-only `Text` views for copy support
+- `selectedTicket` drives both list highlight and detail panel — always set it (not nil) when switching context
 
-- [ ] Create and Run Task
+## Build & Test Commands
+```bash
+# Debug build
+xcodebuild build -project WorklogApp.xcodeproj -scheme WorklogApp \
+  -destination 'platform=macOS' -configuration Debug \
+  CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
 
-- [ ] Launch the Project
+# Run tests
+xcodebuild test -project WorklogApp.xcodeproj -scheme WorklogApp \
+  -destination 'platform=macOS' \
+  CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
 
-- [ ] Ensure Documentation is Complete
+# Release universal binary (CI does this — see .github/workflows/build.yml)
+xcodebuild build ... ARCHS="arm64 x86_64" -configuration Release
+```
 
-## Development Guidelines
-
-- **Code Language**: All code comments, variable names, function names, and documentation must be written in English. This ensures consistency and maintainability across the codebase.
-
-- **Testing**: Write corresponding tests for every new feature or code change:
-  - Unit tests for business logic (models, relationships, data operations)
-  - UI tests for user interactions (when feasible on the platform)
-  - Tests must cover both basic scenarios (happy path) and edge cases
-  - Run tests before committing: `xcodebuild test -scheme WorklogApp -destination 'platform=macOS'`
-
-- Work through each checklist item systematically.
-- Keep communication concise and focused.
-- Follow development best practices.
+## Development Rules
+- **Language**: All code, comments, variable names, and commit messages in **English**
+- **Testing**: Unit tests in `WorklogAppTests/` for models and relationships. Cover happy path + edge cases for every change
+- **No unique constraints** on `Ticket.ticketId` — it is purely informational
+- **Conditionally display** `ticketId` — check `!ticket.ticketId.isEmpty` before rendering
+- When adding new views with pre-selected values from parent context, initialize `@State` in `init`, not `onAppear`
