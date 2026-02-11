@@ -429,8 +429,12 @@ struct ContentView: View {
         
         if result.elapsed > 0 {
             let hours = result.elapsed / 3600
-            let entry = TimeEntry(hours: hours, ticket: ticket, note: nil)
-            modelContext.insert(entry)
+            if let existingEntry = result.continuingEntry {
+                existingEntry.hours += hours
+            } else {
+                let entry = TimeEntry(hours: hours, ticket: ticket, note: nil)
+                modelContext.insert(entry)
+            }
             
             do {
                 try modelContext.save()
@@ -720,6 +724,7 @@ struct TicketDetailView: View {
     @State private var logMinutes: String = "30"
     @State private var logSeconds: String = "0"
     @State private var entryNote: String = ""
+    @State private var logDate: Date = Date()
     @State private var timerCancellable: Timer?
     
     // Edit mode
@@ -740,6 +745,14 @@ struct TicketDetailView: View {
     
     private var isTimingPaused: Bool {
         isTiming && timerState.isPaused
+    }
+    
+    private func isEntryFromToday(_ entry: TimeEntry) -> Bool {
+        Calendar.current.isDateInToday(entry.loggedAt)
+    }
+    
+    private var isContinuingEntry: Bool {
+        isTiming && timerState.continuingEntry != nil
     }
     
     private var availableIterations: [Iteration] {
@@ -1018,43 +1031,61 @@ struct TicketDetailView: View {
                 
                 // Log Time Section
                 GroupBox {
-                    HStack(spacing: 12) {
-                        HStack(spacing: 4) {
-                            TextField("H", text: $logHours)
-                                .textFieldStyle(.roundedBorder)
-                                .frame(width: 50)
-                                .multilineTextAlignment(.trailing)
-                            Text("h")
-                                .foregroundStyle(.secondary)
-                                .font(.caption)
+                    VStack(spacing: 8) {
+                        HStack(spacing: 12) {
+                            HStack(spacing: 4) {
+                                TextField("H", text: $logHours)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 50)
+                                    .multilineTextAlignment(.trailing)
+                                Text("h")
+                                    .foregroundStyle(.secondary)
+                                    .font(.caption)
+                                
+                                TextField("M", text: $logMinutes)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 50)
+                                    .multilineTextAlignment(.trailing)
+                                Text("m")
+                                    .foregroundStyle(.secondary)
+                                    .font(.caption)
+                                
+                                TextField("S", text: $logSeconds)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 50)
+                                    .multilineTextAlignment(.trailing)
+                                Text("s")
+                                    .foregroundStyle(.secondary)
+                                    .font(.caption)
+                            }
                             
-                            TextField("M", text: $logMinutes)
+                            TextField("Note (optional)", text: $entryNote)
                                 .textFieldStyle(.roundedBorder)
-                                .frame(width: 50)
-                                .multilineTextAlignment(.trailing)
-                            Text("m")
-                                .foregroundStyle(.secondary)
-                                .font(.caption)
                             
-                            TextField("S", text: $logSeconds)
-                                .textFieldStyle(.roundedBorder)
-                                .frame(width: 50)
-                                .multilineTextAlignment(.trailing)
-                            Text("s")
-                                .foregroundStyle(.secondary)
-                                .font(.caption)
+                            Button {
+                                addTimeEntry()
+                            } label: {
+                                Label("Add", systemImage: "plus.circle.fill")
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(!isValidTimeInput())
                         }
                         
-                        TextField("Note (optional)", text: $entryNote)
-                            .textFieldStyle(.roundedBorder)
-                        
-                        Button {
-                            addTimeEntry()
-                        } label: {
-                            Label("Add", systemImage: "plus.circle.fill")
+                        HStack {
+                            DatePicker("Day:", selection: $logDate, in: ...Date(), displayedComponents: .date)
+                                .labelsHidden()
+                            if !Calendar.current.isDateInToday(logDate) {
+                                Button {
+                                    logDate = Date()
+                                } label: {
+                                    Text("Today")
+                                        .font(.caption)
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                            }
+                            Spacer()
                         }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(!isValidTimeInput())
                     }
                 } label: {
                     Label("Log Time", systemImage: "clock.badge.checkmark")
@@ -1121,6 +1152,15 @@ struct TicketDetailView: View {
                                 .padding(.vertical, 2)
                                 .background(isTimingPaused ? Color.yellow : Color.orange)
                                 .cornerRadius(4)
+                            if isContinuingEntry {
+                                Text("Continuing")
+                                    .font(.caption)
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.green)
+                                    .cornerRadius(4)
+                            }
                         }
                     }
                 }
@@ -1162,11 +1202,27 @@ struct TicketDetailView: View {
                         VStack(spacing: 0) {
                             ForEach(sortedEntries) { entry in
                                 HStack(spacing: 12) {
+                                    if isContinuingEntry && timerState.continuingEntry?.id == entry.id {
+                                        Image(systemName: "arrow.trianglehead.counterclockwise")
+                                            .foregroundStyle(.green)
+                                            .font(.caption)
+                                    }
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text(entry.loggedAt, formatter: Self.timestampFormatter)
-                                            .font(.subheadline)
-                                            .fontWeight(.medium)
-                                            .textSelection(.enabled)
+                                        HStack(spacing: 6) {
+                                            Text(entry.loggedAt, formatter: Self.timestampFormatter)
+                                                .font(.subheadline)
+                                                .fontWeight(.medium)
+                                                .textSelection(.enabled)
+                                            if isContinuingEntry && timerState.continuingEntry?.id == entry.id {
+                                                Text("Continuing…")
+                                                    .font(.caption2)
+                                                    .foregroundStyle(.white)
+                                                    .padding(.horizontal, 4)
+                                                    .padding(.vertical, 1)
+                                                    .background(Color.green)
+                                                    .cornerRadius(3)
+                                            }
+                                        }
                                         if let note = entry.note, !note.isEmpty {
                                             Text(note)
                                                 .font(.caption)
@@ -1185,6 +1241,14 @@ struct TicketDetailView: View {
                                 .padding(.vertical, 8)
                                 .contentShape(Rectangle())
                                 .contextMenu {
+                                    if isEntryFromToday(entry) && !isTiming {
+                                        Button {
+                                            continueEntry(entry)
+                                        } label: {
+                                            Label("Continue Timer", systemImage: "play.circle")
+                                        }
+                                        Divider()
+                                    }
                                     Button {
                                         presentedSheet = .editTimeEntry(entry)
                                     } label: {
@@ -1244,12 +1308,13 @@ struct TicketDetailView: View {
         guard totalHours > 0 else { return }
         
         let noteText = entryNote.isEmpty ? nil : entryNote
-        let entry = TimeEntry(hours: totalHours, ticket: ticket, note: noteText)
+        let entry = TimeEntry(hours: totalHours, loggedAt: logDate, ticket: ticket, note: noteText)
         modelContext.insert(entry)
         
         do {
             try modelContext.save()
             entryNote = ""
+            logDate = Date()
             // Reset to default
             logHours = "0"
             logMinutes = "30"
@@ -1281,8 +1346,21 @@ struct TicketDetailView: View {
             guard result.elapsed > 0 else { return }
             
             let hours = result.elapsed / 3600
-            let entry = TimeEntry(hours: hours, ticket: ticket, note: noteText)
-            modelContext.insert(entry)
+            
+            if let existingEntry = result.continuingEntry {
+                // Append time to the existing entry
+                existingEntry.hours += hours
+                if let newNote = noteText, !newNote.isEmpty {
+                    if let existing = existingEntry.note, !existing.isEmpty {
+                        existingEntry.note = existing + "; " + newNote
+                    } else {
+                        existingEntry.note = newNote
+                    }
+                }
+            } else {
+                let entry = TimeEntry(hours: hours, ticket: ticket, note: noteText)
+                modelContext.insert(entry)
+            }
             
             do {
                 try modelContext.save()
@@ -1298,13 +1376,61 @@ struct TicketDetailView: View {
                 if let result = timerState.stopTimer() {
                     if result.elapsed > 0 {
                         let hours = result.elapsed / 3600
-                        let entry = TimeEntry(hours: hours, ticket: otherTicket, note: noteText)
-                        modelContext.insert(entry)
+                        if let existingEntry = result.continuingEntry {
+                            existingEntry.hours += hours
+                            if let newNote = noteText, !newNote.isEmpty {
+                                if let existing = existingEntry.note, !existing.isEmpty {
+                                    existingEntry.note = existing + "; " + newNote
+                                } else {
+                                    existingEntry.note = newNote
+                                }
+                            }
+                        } else {
+                            let entry = TimeEntry(hours: hours, ticket: otherTicket, note: noteText)
+                            modelContext.insert(entry)
+                        }
                         try? modelContext.save()
                     }
                 }
             }
             timerState.startTimer(for: ticket)
+        }
+    }
+    
+    private func continueEntry(_ entry: TimeEntry) {
+        // If a timer is already running, stop and save it first
+        if timerState.isRunning, let otherTicket = timerState.currentTicket {
+            let note = timerState.getNote(for: otherTicket)
+            let noteText = note.isEmpty ? nil : note
+            timerState.clearNote(for: otherTicket)
+            if let result = timerState.stopTimer() {
+                if result.elapsed > 0 {
+                    let hours = result.elapsed / 3600
+                    if let existingEntry = result.continuingEntry {
+                        existingEntry.hours += hours
+                        if let newNote = noteText, !newNote.isEmpty {
+                            if let existing = existingEntry.note, !existing.isEmpty {
+                                existingEntry.note = existing + "; " + newNote
+                            } else {
+                                existingEntry.note = newNote
+                            }
+                        }
+                    } else {
+                        let newEntry = TimeEntry(hours: hours, ticket: otherTicket, note: noteText)
+                        modelContext.insert(newEntry)
+                    }
+                    try? modelContext.save()
+                }
+            }
+        }
+        
+        // Start timer continuing the selected entry
+        timerState.startTimer(for: ticket, continuing: entry)
+        
+        // Pre-fill note from entry if available
+        if let existingNote = entry.note, !existingNote.isEmpty {
+            let key = ticket.id.hashValue.description
+            timerState.ticketNotes[key] = existingNote
         }
     }
     

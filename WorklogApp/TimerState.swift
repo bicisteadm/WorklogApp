@@ -9,6 +9,9 @@ class TimerState: ObservableObject {
     @Published var elapsedTime: TimeInterval = 0
     @Published var ticketNotes: [String: String] = [:]
     
+    /// When continuing a previous time entry, this holds the entry to append time to
+    @Published var continuingEntry: TimeEntry?
+    
     /// Time accumulated from previous run segments (before pauses)
     private var accumulatedTime: TimeInterval = 0
     
@@ -30,8 +33,9 @@ class TimerState: ObservableObject {
     
     private var timer: Timer?
     
-    func startTimer(for ticket: Ticket) {
+    func startTimer(for ticket: Ticket, continuing entry: TimeEntry? = nil) {
         currentTicket = ticket
+        continuingEntry = entry
         startDate = Date()
         isRunning = true
         isPaused = false
@@ -73,7 +77,7 @@ class TimerState: ObservableObject {
         RunLoop.current.add(timer!, forMode: .common)
     }
     
-    func stopTimer() -> (ticket: Ticket, elapsed: TimeInterval)? {
+    func stopTimer() -> (ticket: Ticket, elapsed: TimeInterval, continuingEntry: TimeEntry?)? {
         timer?.invalidate()
         timer = nil
         
@@ -81,6 +85,7 @@ class TimerState: ObservableObject {
             isRunning = false
             isPaused = false
             currentTicket = nil
+            continuingEntry = nil
             startDate = nil
             elapsedTime = 0
             accumulatedTime = 0
@@ -93,11 +98,12 @@ class TimerState: ObservableObject {
             totalElapsed += Date().timeIntervalSince(start)
         }
         
-        let result = (ticket: ticket, elapsed: totalElapsed)
+        let result = (ticket: ticket, elapsed: totalElapsed, continuingEntry: continuingEntry)
         
         isRunning = false
         isPaused = false
         currentTicket = nil
+        continuingEntry = nil
         startDate = nil
         elapsedTime = 0
         accumulatedTime = 0

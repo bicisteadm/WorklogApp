@@ -600,4 +600,144 @@ final class WorklogAppTests: XCTestCase {
         timer.elapsedTime = 7323 // 2h 2min 3s
         XCTAssertEqual(timer.formatElapsedTime(), "2h 2min 3s")
     }
+    
+    // MARK: - Timer Continue Entry Tests
+    
+    func testTimerStartContinuingEntry() throws {
+        let ticket = Ticket(name: "Continue Ticket", detail: "")
+        context.insert(ticket)
+        let entry = TimeEntry(hours: 1.0, ticket: ticket, note: "Initial work")
+        context.insert(entry)
+        try context.save()
+        
+        let timer = TimerState()
+        timer.startTimer(for: ticket, continuing: entry)
+        
+        XCTAssertTrue(timer.isRunning)
+        XCTAssertNotNil(timer.continuingEntry)
+        XCTAssertEqual(timer.continuingEntry?.id, entry.id)
+    }
+    
+    func testTimerStopReturnsContinuingEntry() throws {
+        let ticket = Ticket(name: "Continue Ticket", detail: "")
+        context.insert(ticket)
+        let entry = TimeEntry(hours: 1.0, ticket: ticket, note: "Initial work")
+        context.insert(entry)
+        try context.save()
+        
+        let timer = TimerState()
+        timer.startTimer(for: ticket, continuing: entry)
+        
+        Thread.sleep(forTimeInterval: 0.05)
+        
+        let result = timer.stopTimer()
+        XCTAssertNotNil(result)
+        XCTAssertNotNil(result!.continuingEntry)
+        XCTAssertEqual(result!.continuingEntry?.id, entry.id)
+        XCTAssertGreaterThan(result!.elapsed, 0)
+    }
+    
+    func testTimerStopWithoutContinuingEntryReturnsNil() throws {
+        let ticket = Ticket(name: "Normal Ticket", detail: "")
+        context.insert(ticket)
+        try context.save()
+        
+        let timer = TimerState()
+        timer.startTimer(for: ticket)
+        
+        Thread.sleep(forTimeInterval: 0.05)
+        
+        let result = timer.stopTimer()
+        XCTAssertNotNil(result)
+        XCTAssertNil(result!.continuingEntry)
+    }
+    
+    func testTimerContinuingEntryResetOnStop() throws {
+        let ticket = Ticket(name: "Continue Ticket", detail: "")
+        context.insert(ticket)
+        let entry = TimeEntry(hours: 1.0, ticket: ticket)
+        context.insert(entry)
+        try context.save()
+        
+        let timer = TimerState()
+        timer.startTimer(for: ticket, continuing: entry)
+        _ = timer.stopTimer()
+        
+        XCTAssertNil(timer.continuingEntry)
+    }
+    
+    func testTimerContinuingEntryWithPauseResume() throws {
+        let ticket = Ticket(name: "Continue Ticket", detail: "")
+        context.insert(ticket)
+        let entry = TimeEntry(hours: 0.5, ticket: ticket)
+        context.insert(entry)
+        try context.save()
+        
+        let timer = TimerState()
+        timer.startTimer(for: ticket, continuing: entry)
+        
+        Thread.sleep(forTimeInterval: 0.05)
+        timer.pauseTimer()
+        
+        XCTAssertNotNil(timer.continuingEntry)
+        XCTAssertTrue(timer.isPaused)
+        
+        timer.resumeTimer()
+        Thread.sleep(forTimeInterval: 0.05)
+        
+        let result = timer.stopTimer()
+        XCTAssertNotNil(result)
+        XCTAssertNotNil(result!.continuingEntry)
+        XCTAssertEqual(result!.continuingEntry?.id, entry.id)
+    }
+    
+    func testContinuingEntryHoursCanBeAppended() throws {
+        let ticket = Ticket(name: "Continue Ticket", detail: "")
+        context.insert(ticket)
+        let entry = TimeEntry(hours: 1.0, ticket: ticket, note: "First session")
+        context.insert(entry)
+        try context.save()
+        
+        // Simulate appending time (what the view code does)
+        let additionalHours = 0.5
+        entry.hours += additionalHours
+        try context.save()
+        
+        XCTAssertEqual(entry.hours, 1.5)
+    }
+    
+    func testContinuingEntryNoteAppend() throws {
+        let ticket = Ticket(name: "Continue Ticket", detail: "")
+        context.insert(ticket)
+        let entry = TimeEntry(hours: 1.0, ticket: ticket, note: "First session")
+        context.insert(entry)
+        try context.save()
+        
+        // Simulate appending note (what the view code does)
+        if let existing = entry.note, !existing.isEmpty {
+            entry.note = existing + "; " + "Second session"
+        }
+        try context.save()
+        
+        XCTAssertEqual(entry.note, "First session; Second session")
+    }
+    
+    func testContinuingEntryNoteAppendWhenOriginalNoteIsNil() throws {
+        let ticket = Ticket(name: "Continue Ticket", detail: "")
+        context.insert(ticket)
+        let entry = TimeEntry(hours: 1.0, ticket: ticket, note: nil)
+        context.insert(entry)
+        try context.save()
+        
+        // Simulate setting note on entry with no previous note
+        let newNote = "New session note"
+        if let existing = entry.note, !existing.isEmpty {
+            entry.note = existing + "; " + newNote
+        } else {
+            entry.note = newNote
+        }
+        try context.save()
+        
+        XCTAssertEqual(entry.note, "New session note")
+    }
 }

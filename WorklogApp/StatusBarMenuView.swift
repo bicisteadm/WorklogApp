@@ -65,8 +65,12 @@ struct MenuBarContentView: View {
                 if let result = timerState.stopTimer() {
                     if result.elapsed > 0 {
                         let hours = result.elapsed / 3600
-                        let entry = TimeEntry(hours: hours, ticket: ticket, note: nil)
-                        modelContext.insert(entry)
+                        if let existingEntry = result.continuingEntry {
+                            existingEntry.hours += hours
+                        } else {
+                            let entry = TimeEntry(hours: hours, ticket: ticket, note: nil)
+                            modelContext.insert(entry)
+                        }
                         
                         do {
                             try modelContext.save()
