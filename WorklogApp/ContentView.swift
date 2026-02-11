@@ -315,7 +315,7 @@ struct ContentView: View {
             })
             .onPreferenceChange(ContentWidthKey.self) { contentWidth = $0 }
         } detail: {
-            if let ticket = selectedTicket ?? filteredTickets.first ?? tickets.first {
+            if let ticket = selectedTicket ?? filteredTickets.first {
                 TicketDetailView(
                     ticket: ticket,
                     presentedSheet: $presentedSheet,
@@ -406,7 +406,7 @@ struct ContentView: View {
                 selectedProject = projects.first
             }
             if selectedTicket == nil {
-                selectedTicket = filteredTickets.first ?? tickets.first
+                selectedTicket = filteredTickets.first
             }
         }
         .fileImporter(isPresented: $showImportDB, allowedContentTypes: [.data]) { result in
