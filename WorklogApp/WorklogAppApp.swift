@@ -1,8 +1,17 @@
 import SwiftUI
 import SwiftData
+import AppKit
+
+class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // Ensure no Dock icon — run as menu bar-only agent app
+        NSApp.setActivationPolicy(.accessory)
+    }
+}
 
 @main
 struct WorklogAppApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     let modelContainer: ModelContainer
     @StateObject private var timerState = TimerState()
     @Environment(\.openWindow) private var openWindow
