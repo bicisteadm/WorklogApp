@@ -194,7 +194,9 @@ struct ContentView: View {
                                         .foregroundStyle(.secondary)
                                 }
                             }
-                            Text(ticket.ticketId).font(.subheadline).foregroundStyle(.secondary)
+                            if !ticket.ticketId.isEmpty {
+                                Text(ticket.ticketId).font(.subheadline).foregroundStyle(.secondary)
+                            }
                             if let project = ticket.project {
                                 Text(project.name)
                                     .font(.caption)
@@ -286,6 +288,7 @@ struct ContentView: View {
                     presentedSheet: $presentedSheet,
                     timerState: timerState
                 )
+                .id(ticket.id)
             } else {
                 ContentUnavailableView("Select a ticket", systemImage: "ticket")
             }
@@ -298,7 +301,7 @@ struct ContentView: View {
         .sheet(item: $presentedSheet) { sheet in
             switch sheet {
             case .newTicket:
-                NewTicketView(projects: projects, selectedProject: selectedProject) { ticket in
+                NewTicketView(projects: projects, selectedProject: selectedProject, selectedIteration: selectedIteration) { ticket in
                     selectedTicket = ticket
                 }
                 .padding()
@@ -343,16 +346,27 @@ struct ContentView: View {
                 selectedTicket = nil
             }
         }
-        .onChange(of: selectedProject) { _, _ in
+        .onChange(of: selectedProject) { _, newProject in
             selectedIteration = nil
-            if let current = selectedTicket, filteredTickets.contains(where: { $0.id == current.id }) == false {
-                selectedTicket = filteredTickets.first
+            // Recompute filtered tickets for the new project (no iteration filter)
+            let filtered = tickets.filter { ticket in
+                guard let proj = newProject else { return true }
+                return ticket.project?.id == proj.id
             }
+            selectedTicket = filtered.first
         }
-        .onChange(of: selectedIteration) { _, _ in
-            if let current = selectedTicket, filteredTickets.contains(where: { $0.id == current.id }) == false {
-                selectedTicket = filteredTickets.first
+        .onChange(of: selectedIteration) { _, newIteration in
+            // Recompute filtered tickets for current project + new iteration
+            let filtered = tickets.filter { ticket in
+                if let proj = selectedProject {
+                    guard ticket.project?.id == proj.id else { return false }
+                }
+                if let iter = newIteration {
+                    guard ticket.iteration?.id == iter.id else { return false }
+                }
+                return true
             }
+            selectedTicket = filtered.first
         }
         .onAppear {
             if selectedProject == nil {
@@ -505,7 +519,17 @@ struct NewTicketView: View {
     @Query private var iterations: [Iteration]
     let projects: [Project]
     let selectedProject: Project?
+    let selectedIteration: Iteration?
     let onComplete: (Ticket) -> Void
+    
+    init(projects: [Project], selectedProject: Project?, selectedIteration: Iteration?, onComplete: @escaping (Ticket) -> Void) {
+        self.projects = projects
+        self.selectedProject = selectedProject
+        self.selectedIteration = selectedIteration
+        self.onComplete = onComplete
+        _projectSelection = State(initialValue: selectedProject)
+        _iterationSelection = State(initialValue: selectedIteration)
+    }
     
     private var availableIterations: [Iteration] {
         guard let project = projectSelection else { return [] }
@@ -578,18 +602,15 @@ struct NewTicketView: View {
                         saveTicket()
                     }
                     .keyboardShortcut(.defaultAction)
-                    .disabled(ticketId.isEmpty || name.isEmpty)
+                    .disabled(name.isEmpty)
                 }
             }
             .padding()
         }
-        .onAppear {
-            projectSelection = selectedProject
-        }
     }
     
     private func saveTicket() {
-        guard !ticketId.isEmpty, !name.isEmpty else { return }
+        guard !name.isEmpty else { return }
         
         let ticket = Ticket(
             ticketId: ticketId,
@@ -829,17 +850,21 @@ struct TicketDetailView: View {
                             VStack(alignment: .leading, spacing: 12) {
                                 HStack(alignment: .top) {
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text(ticket.ticketId)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                            .padding(.horizontal, 8)
-                                            .padding(.vertical, 2)
-                                            .background(Color.accentColor.opacity(0.1))
-                                            .cornerRadius(4)
+                                        if !ticket.ticketId.isEmpty {
+                                            Text(ticket.ticketId)
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 2)
+                                                .background(Color.accentColor.opacity(0.1))
+                                                .cornerRadius(4)
+                                                .textSelection(.enabled)
+                                        }
                                         
                                         Text(ticket.name)
                                             .font(.title2)
                                             .fontWeight(.semibold)
+                                            .textSelection(.enabled)
                                         
                                         if let project = ticket.project {
                                             HStack(spacing: 4) {
@@ -859,6 +884,7 @@ struct TicketDetailView: View {
                                     Text(ticket.detail)
                                         .foregroundStyle(.secondary)
                                         .padding(.top, 4)
+                                        .textSelection(.enabled)
                                 }
                             }
                         }
@@ -877,7 +903,7 @@ struct TicketDetailView: View {
                                 saveTicket()
                             }
                             .buttonStyle(.borderedProminent)
-                            .disabled(editTicketId.isEmpty || editName.isEmpty)
+                            .disabled(editName.isEmpty)
                         } else {
                             Button {
                                 startEditing()
@@ -1092,10 +1118,12 @@ struct TicketDetailView: View {
                                         Text(entry.loggedAt, formatter: Self.timestampFormatter)
                                             .font(.subheadline)
                                             .fontWeight(.medium)
+                                            .textSelection(.enabled)
                                         if let note = entry.note, !note.isEmpty {
                                             Text(note)
                                                 .font(.caption)
                                                 .foregroundStyle(.secondary)
+                                                .textSelection(.enabled)
                                         }
                                     }
                                     Spacer()
@@ -1104,6 +1132,7 @@ struct TicketDetailView: View {
                                         .font(.system(.body, design: .monospaced))
                                         .fontWeight(.semibold)
                                         .foregroundStyle(Color.accentColor)
+                                        .textSelection(.enabled)
                                 }
                                 .padding(.vertical, 8)
                                 .contentShape(Rectangle())
@@ -1143,7 +1172,7 @@ struct TicketDetailView: View {
             }
             .padding()
         }
-        .navigationTitle(ticket.ticketId)
+        .navigationTitle(ticket.ticketId.isEmpty ? ticket.name : ticket.ticketId)
         .onAppear {
             startTimerIfNeeded()
         }
@@ -1606,7 +1635,7 @@ struct EditTicketView: View {
                         saveTicket()
                     }
                     .keyboardShortcut(.defaultAction)
-                    .disabled(ticketId.isEmpty || name.isEmpty)
+                    .disabled(name.isEmpty)
                 }
             }
             .padding()
@@ -1614,7 +1643,7 @@ struct EditTicketView: View {
     }
     
     private func saveTicket() {
-        guard !ticketId.isEmpty, !name.isEmpty else { return }
+        guard !name.isEmpty else { return }
         
         ticket.ticketId = ticketId
         ticket.name = name
@@ -2178,10 +2207,12 @@ struct ReportsView: View {
             HStack {
                 Text(groupingMode == .individual ? "\(filteredEntries.count) time entries" : "\(groupedData.count) groups")
                     .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
                 Spacer()
                 Text("Total: \(formatDuration(totalHours * 3600))")
                     .font(.headline)
                     .monospacedDigit()
+                    .textSelection(.enabled)
             }
             .padding(.horizontal)
             .padding(.vertical, 8)
@@ -2195,6 +2226,7 @@ struct ReportsView: View {
                 Table(filteredEntries) {
                     TableColumn("Date") { entry in
                         Text(entry.loggedAt.formatted(date: .abbreviated, time: .omitted))
+                            .textSelection(.enabled)
                     }
                     .width(min: 100, max: 120)
                     
@@ -2202,9 +2234,11 @@ struct ReportsView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(entry.ticket?.name ?? "Unknown")
                                 .font(.headline)
+                                .textSelection(.enabled)
                             Text(entry.ticket?.ticketId ?? "")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
                         }
                     }
                     .width(min: 150, ideal: 200)
@@ -2212,6 +2246,7 @@ struct ReportsView: View {
                     TableColumn("Project") { entry in
                         Text(entry.ticket?.project?.name ?? "No project")
                             .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
                     }
                     .width(min: 120, ideal: 150)
                     
@@ -2221,6 +2256,7 @@ struct ReportsView: View {
                                 Image(systemName: iteration.type == .sprint ? "arrow.clockwise" : "flag")
                                     .font(.caption)
                                 Text(iteration.name)
+                                    .textSelection(.enabled)
                             }
                             .font(.caption)
                         } else {
@@ -2234,6 +2270,7 @@ struct ReportsView: View {
                         Text(entry.note ?? "")
                             .lineLimit(2)
                             .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
                     }
                     .width(min: 150)
                     
@@ -2241,6 +2278,7 @@ struct ReportsView: View {
                         Text(formatDuration(entry.hours * 3600))
                             .monospacedDigit()
                             .font(.system(.body, design: .monospaced))
+                            .textSelection(.enabled)
                     }
                     .width(min: 120, max: 150)
                 }
@@ -2252,10 +2290,12 @@ struct ReportsView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(group.name)
                                 .font(.headline)
+                                .textSelection(.enabled)
                             if let subtitle = group.subtitle {
                                 Text(subtitle)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
+                                    .textSelection(.enabled)
                             }
                         }
                     }
@@ -2264,6 +2304,7 @@ struct ReportsView: View {
                     TableColumn("Time Entries") { group in
                         Text("\(group.entries.count)")
                             .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
                     }
                     .width(min: 120, max: 140)
                     
@@ -2272,6 +2313,7 @@ struct ReportsView: View {
                             .monospacedDigit()
                             .font(.system(.body, design: .monospaced))
                             .fontWeight(.semibold)
+                            .textSelection(.enabled)
                     }
                     .width(min: 140, max: 160)
                 }

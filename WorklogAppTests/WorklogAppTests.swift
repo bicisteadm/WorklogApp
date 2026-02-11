@@ -88,6 +88,29 @@ final class WorklogAppTests: XCTestCase {
         XCTAssertTrue(ticket.entries.isEmpty)
     }
     
+    func testTicketCreationWithoutTicketId() throws {
+        let ticket = Ticket(name: "No ID Ticket", detail: "Ticket without external ID")
+        context.insert(ticket)
+        try context.save()
+        
+        XCTAssertEqual(ticket.ticketId, "")
+        XCTAssertEqual(ticket.name, "No ID Ticket")
+        XCTAssertEqual(ticket.detail, "Ticket without external ID")
+    }
+    
+    func testTicketIdIsInformationalOnly() throws {
+        // Two tickets can have the same ticketId (no unique constraint)
+        let ticket1 = Ticket(ticketId: "SAME-001", name: "Ticket A", detail: "")
+        let ticket2 = Ticket(ticketId: "SAME-001", name: "Ticket B", detail: "")
+        context.insert(ticket1)
+        context.insert(ticket2)
+        try context.save()
+        
+        let descriptor = FetchDescriptor<Ticket>()
+        let tickets = try context.fetch(descriptor)
+        XCTAssertEqual(tickets.count, 2)
+    }
+    
     func testTicketWithDates() throws {
         let startDate = Date()
         let dueDate = Calendar.current.date(byAdding: .day, value: 7, to: startDate)!
