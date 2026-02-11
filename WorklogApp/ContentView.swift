@@ -36,6 +36,18 @@ enum SheetType: Identifiable {
     }
 }
 
+// MARK: - Preference keys for persisting column widths
+
+private struct SidebarWidthKey: PreferenceKey {
+    static var defaultValue: Double = 200
+    static func reduce(value: inout Double, nextValue: () -> Double) { value = nextValue() }
+}
+
+private struct ContentWidthKey: PreferenceKey {
+    static var defaultValue: Double = 280
+    static func reduce(value: inout Double, nextValue: () -> Double) { value = nextValue() }
+}
+
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Project.name) private var projects: [Project]
@@ -49,6 +61,8 @@ struct ContentView: View {
     @State private var presentedSheet: SheetType?
     @State private var showReports = false
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @AppStorage("sidebarWidth") private var sidebarWidth: Double = 200
+    @AppStorage("contentWidth") private var contentWidth: Double = 280
     
     // Database backup/restore
     @State private var showImportDB = false
@@ -141,6 +155,11 @@ struct ContentView: View {
                     }
                 }
             }
+            .navigationSplitViewColumnWidth(min: 150, ideal: sidebarWidth, max: 400)
+            .background(GeometryReader { geo in
+                Color.clear.preference(key: SidebarWidthKey.self, value: geo.size.width)
+            })
+            .onPreferenceChange(SidebarWidthKey.self) { sidebarWidth = $0 }
             .navigationTitle("Projects")
             .toolbar {
                 ToolbarItem(placement: .automatic) {
@@ -281,6 +300,11 @@ struct ContentView: View {
                     }
                 }
             }
+            .navigationSplitViewColumnWidth(min: 200, ideal: contentWidth, max: 500)
+            .background(GeometryReader { geo in
+                Color.clear.preference(key: ContentWidthKey.self, value: geo.size.width)
+            })
+            .onPreferenceChange(ContentWidthKey.self) { contentWidth = $0 }
         } detail: {
             if let ticket = selectedTicket ?? filteredTickets.first ?? tickets.first {
                 TicketDetailView(
@@ -689,7 +713,6 @@ struct TicketDetailView: View {
     @State private var logMinutes: String = "30"
     @State private var logSeconds: String = "0"
     @State private var entryNote: String = ""
-    @State private var timerNote: String = ""
     @State private var timerCancellable: Timer?
     
     // Edit mode
@@ -1050,7 +1073,7 @@ struct TicketDetailView: View {
                                 .frame(minWidth: 80)
                         }
                         
-                        TextField("Note (optional)", text: $timerNote)
+                        TextField("Note (optional)", text: timerState.noteBinding(for: ticket))
                             .textFieldStyle(.roundedBorder)
                         
                         Button {
@@ -1225,25 +1248,40 @@ struct TicketDetailView: View {
         if isTiming {
             stopTimer()
             
+            let note = timerState.getNote(for: ticket)
+            let noteText = note.isEmpty ? nil : note
+            timerState.clearNote(for: ticket)
             guard let result = timerState.stopTimer() else { return }
             
             let elapsed = result.endDate.timeIntervalSince(result.startDate)
             guard elapsed > 0 else { return }
             
             let hours = elapsed / 3600
-            let noteText = timerNote.isEmpty ? nil : timerNote
             let entry = TimeEntry(hours: hours, ticket: ticket, note: noteText)
             modelContext.insert(entry)
             
             do {
                 try modelContext.save()
-                timerNote = ""
             } catch {
                 print("Failed to save timer entry: \(error)")
             }
         } else {
+            // If a timer is running on another ticket, stop and save it first
+            if timerState.isRunning, let otherTicket = timerState.currentTicket {
+                let note = timerState.getNote(for: otherTicket)
+                let noteText = note.isEmpty ? nil : note
+                timerState.clearNote(for: otherTicket)
+                if let result = timerState.stopTimer() {
+                    let elapsed = result.endDate.timeIntervalSince(result.startDate)
+                    if elapsed > 0 {
+                        let hours = elapsed / 3600
+                        let entry = TimeEntry(hours: hours, ticket: otherTicket, note: noteText)
+                        modelContext.insert(entry)
+                        try? modelContext.save()
+                    }
+                }
+            }
             timerState.startTimer(for: ticket)
-            timerNote = ""
         }
     }
     

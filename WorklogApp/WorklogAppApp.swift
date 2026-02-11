@@ -45,6 +45,7 @@ struct WorklogAppApp: App {
         WindowGroup(id: "main") {
             ContentView(timerState: timerState)
                 .frame(minWidth: 800, minHeight: 600)
+                .background(WindowAccessor())
         }
         .modelContainer(modelContainer)
         .commands {
@@ -55,4 +56,19 @@ struct WorklogAppApp: App {
             }
         }
     }
+}
+
+/// Sets NSWindow.frameAutosaveName so macOS remembers window size & position across launches.
+private struct WindowAccessor: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            if let window = view.window {
+                window.setFrameAutosaveName("MainWindow")
+            }
+        }
+        return view
+    }
+    
+    func updateNSView(_ nsView: NSView, context: Context) {}
 }

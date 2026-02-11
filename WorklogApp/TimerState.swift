@@ -6,6 +6,23 @@ class TimerState: ObservableObject {
     @Published var currentTicket: Ticket?
     @Published var startDate: Date?
     @Published var elapsedTime: TimeInterval = 0
+    @Published var ticketNotes: [String: String] = [:]
+    
+    func noteBinding(for ticket: Ticket) -> Binding<String> {
+        let key = ticket.id.hashValue.description
+        return Binding(
+            get: { self.ticketNotes[key] ?? "" },
+            set: { self.ticketNotes[key] = $0 }
+        )
+    }
+    
+    func getNote(for ticket: Ticket) -> String {
+        ticketNotes[ticket.id.hashValue.description] ?? ""
+    }
+    
+    func clearNote(for ticket: Ticket) {
+        ticketNotes.removeValue(forKey: ticket.id.hashValue.description)
+    }
     
     private var timer: Timer?
     
