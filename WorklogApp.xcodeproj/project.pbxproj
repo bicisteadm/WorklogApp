@@ -17,6 +17,15 @@
 		66F0B6642F0E99AB001A90C7 /* TimerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66F0B6632F0E99AB001A90C7 /* TimerState.swift */; };
 		66F0B6662F0EA1A4001A90C7 /* StatusBarMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66F0B6652F0EA1A4001A90C7 /* StatusBarMenuView.swift */; };
 		66F0B6682F0EA1AF001A90C7 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 66F0B6672F0EA1AF001A90C7 /* Info.plist */; };
+		CC00000B2F10000100000001 /* Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00000A2F10000100000001 /* Helpers.swift */; };
+		CC00000B2F10000100000002 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00000A2F10000100000002 /* SidebarView.swift */; };
+		CC00000B2F10000100000003 /* TicketListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00000A2F10000100000003 /* TicketListView.swift */; };
+		CC00000B2F10000100000004 /* TicketDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00000A2F10000100000004 /* TicketDetailView.swift */; };
+		CC00000B2F10000100000005 /* ProjectSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00000A2F10000100000005 /* ProjectSheets.swift */; };
+		CC00000B2F10000100000006 /* TicketSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00000A2F10000100000006 /* TicketSheets.swift */; };
+		CC00000B2F10000100000007 /* IterationSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00000A2F10000100000007 /* IterationSheets.swift */; };
+		CC00000B2F10000100000008 /* EditTimeEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00000A2F10000100000008 /* EditTimeEntryView.swift */; };
+		CC00000B2F10000100000009 /* ReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00000A2F10000100000009 /* ReportsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,6 +60,15 @@
 		66F0B6632F0E99AB001A90C7 /* TimerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerState.swift; sourceTree = "<group>"; };
 		66F0B6652F0EA1A4001A90C7 /* StatusBarMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarMenuView.swift; sourceTree = "<group>"; };
 		66F0B6672F0EA1AF001A90C7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		CC00000A2F10000100000001 /* Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
+		CC00000A2F10000100000002 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
+		CC00000A2F10000100000003 /* TicketListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TicketListView.swift; sourceTree = "<group>"; };
+		CC00000A2F10000100000004 /* TicketDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TicketDetailView.swift; sourceTree = "<group>"; };
+		CC00000A2F10000100000005 /* ProjectSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSheets.swift; sourceTree = "<group>"; };
+		CC00000A2F10000100000006 /* TicketSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TicketSheets.swift; sourceTree = "<group>"; };
+		CC00000A2F10000100000007 /* IterationSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IterationSheets.swift; sourceTree = "<group>"; };
+		CC00000A2F10000100000008 /* EditTimeEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditTimeEntryView.swift; sourceTree = "<group>"; };
+		CC00000A2F10000100000009 /* ReportsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -112,10 +130,27 @@
 				66F0B6612F0E81D9001A90C7 /* StatusBarController.swift */,
 				1F1F8B0C2D8F0001007D0001 /* WorklogAppApp.swift */,
 				1F1F8B0D2D8F0001007D0001 /* ContentView.swift */,
+				CC00000C2F10000100000001 /* Views */,
 				1F1F8B162D8F0001007D0001 /* Models */,
 				1F1F8B122D8F0001007D0001 /* Assets.xcassets */,
 			);
 			path = WorklogApp;
+			sourceTree = "<group>";
+		};
+		CC00000C2F10000100000001 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				CC00000A2F10000100000001 /* Helpers.swift */,
+				CC00000A2F10000100000002 /* SidebarView.swift */,
+				CC00000A2F10000100000003 /* TicketListView.swift */,
+				CC00000A2F10000100000004 /* TicketDetailView.swift */,
+				CC00000A2F10000100000005 /* ProjectSheets.swift */,
+				CC00000A2F10000100000006 /* TicketSheets.swift */,
+				CC00000A2F10000100000007 /* IterationSheets.swift */,
+				CC00000A2F10000100000008 /* EditTimeEntryView.swift */,
+				CC00000A2F10000100000009 /* ReportsView.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 		1F1F8B162D8F0001007D0001 /* Models */ = {
@@ -276,6 +311,15 @@
 				66F0B6642F0E99AB001A90C7 /* TimerState.swift in Sources */,
 				1F1F8B1F2D8F0001007D0001 /* ContentView.swift in Sources */,
 				1F1F8B1E2D8F0001007D0001 /* WorklogAppApp.swift in Sources */,
+				CC00000B2F10000100000001 /* Helpers.swift in Sources */,
+				CC00000B2F10000100000002 /* SidebarView.swift in Sources */,
+				CC00000B2F10000100000003 /* TicketListView.swift in Sources */,
+				CC00000B2F10000100000004 /* TicketDetailView.swift in Sources */,
+				CC00000B2F10000100000005 /* ProjectSheets.swift in Sources */,
+				CC00000B2F10000100000006 /* TicketSheets.swift in Sources */,
+				CC00000B2F10000100000007 /* IterationSheets.swift in Sources */,
+				CC00000B2F10000100000008 /* EditTimeEntryView.swift in Sources */,
+				CC00000B2F10000100000009 /* ReportsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
