@@ -265,18 +265,27 @@ struct ContentView: View {
                             selectedTicket = timerTicket
                         } label: {
                             HStack(spacing: 8) {
-                                Image(systemName: "timer")
-                                    .foregroundStyle(.orange)
-                                    .symbolEffect(.pulse, options: .repeating)
+                                Image(systemName: timerState.isPaused ? "pause.circle.fill" : "timer")
+                                    .foregroundStyle(timerState.isPaused ? .yellow : .orange)
+                                    .symbolEffect(.pulse, options: .repeating, isActive: !timerState.isPaused)
                                 Text(timerTicket.name)
                                     .font(.headline)
                                 Text(timerState.formatElapsedTime())
                                     .monospacedDigit()
                                     .font(.system(.body, design: .monospaced))
+                                if timerState.isPaused {
+                                    Text("Paused")
+                                        .font(.caption)
+                                        .foregroundStyle(.white)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Color.yellow)
+                                        .cornerRadius(4)
+                                }
                             }
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
-                            .background(Color.orange.opacity(0.15))
+                            .background((timerState.isPaused ? Color.yellow : Color.orange).opacity(0.15))
                             .cornerRadius(8)
                         }
                         .buttonStyle(.plain)
@@ -418,10 +427,8 @@ struct ContentView: View {
     private func stopTimerFromStatusBar(ticket: Ticket) {
         guard let result = timerState.stopTimer() else { return }
         
-        let elapsed = result.endDate.timeIntervalSince(result.startDate)
-        
-        if elapsed > 0 {
-            let hours = elapsed / 3600
+        if result.elapsed > 0 {
+            let hours = result.elapsed / 3600
             let entry = TimeEntry(hours: hours, ticket: ticket, note: nil)
             modelContext.insert(entry)
             
@@ -729,6 +736,10 @@ struct TicketDetailView: View {
     
     private var isTiming: Bool {
         timerState.currentTicket?.id == ticket.id && timerState.isRunning
+    }
+    
+    private var isTimingPaused: Bool {
+        isTiming && timerState.isPaused
     }
     
     private var availableIterations: [Iteration] {
@@ -1055,9 +1066,9 @@ struct TicketDetailView: View {
                     HStack(spacing: 12) {
                         HStack(spacing: 8) {
                             if isTiming {
-                                Image(systemName: "timer")
-                                    .foregroundStyle(.orange)
-                                    .symbolEffect(.pulse, options: .repeating)
+                                Image(systemName: isTimingPaused ? "pause.circle.fill" : "timer")
+                                    .foregroundStyle(isTimingPaused ? .yellow : .orange)
+                                    .symbolEffect(.pulse, options: .repeating, isActive: !isTimingPaused)
                                     .font(.title3)
                             } else {
                                 Image(systemName: "timer")
@@ -1069,12 +1080,26 @@ struct TicketDetailView: View {
                                 .monospacedDigit()
                                 .font(.system(.title3, design: .monospaced))
                                 .fontWeight(.semibold)
-                                .foregroundStyle(isTiming ? .orange : .primary)
+                                .foregroundStyle(isTiming ? (isTimingPaused ? .yellow : .orange) : .primary)
                                 .frame(minWidth: 80)
                         }
                         
                         TextField("Note (optional)", text: timerState.noteBinding(for: ticket))
                             .textFieldStyle(.roundedBorder)
+                        
+                        if isTiming {
+                            Button {
+                                if isTimingPaused {
+                                    timerState.resumeTimer()
+                                } else {
+                                    timerState.pauseTimer()
+                                }
+                            } label: {
+                                Label(isTimingPaused ? "Resume" : "Pause", systemImage: isTimingPaused ? "play.circle" : "pause.circle")
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(isTimingPaused ? .green : .yellow)
+                        }
                         
                         Button {
                             toggleTimer()
@@ -1089,12 +1114,12 @@ struct TicketDetailView: View {
                         Label("Timer", systemImage: "stopwatch")
                             .font(.headline)
                         if isTiming {
-                            Text("Running")
+                            Text(isTimingPaused ? "Paused" : "Running")
                                 .font(.caption)
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background(Color.orange)
+                                .background(isTimingPaused ? Color.yellow : Color.orange)
                                 .cornerRadius(4)
                         }
                     }
@@ -1253,10 +1278,9 @@ struct TicketDetailView: View {
             timerState.clearNote(for: ticket)
             guard let result = timerState.stopTimer() else { return }
             
-            let elapsed = result.endDate.timeIntervalSince(result.startDate)
-            guard elapsed > 0 else { return }
+            guard result.elapsed > 0 else { return }
             
-            let hours = elapsed / 3600
+            let hours = result.elapsed / 3600
             let entry = TimeEntry(hours: hours, ticket: ticket, note: noteText)
             modelContext.insert(entry)
             
@@ -1272,9 +1296,8 @@ struct TicketDetailView: View {
                 let noteText = note.isEmpty ? nil : note
                 timerState.clearNote(for: otherTicket)
                 if let result = timerState.stopTimer() {
-                    let elapsed = result.endDate.timeIntervalSince(result.startDate)
-                    if elapsed > 0 {
-                        let hours = elapsed / 3600
+                    if result.elapsed > 0 {
+                        let hours = result.elapsed / 3600
                         let entry = TimeEntry(hours: hours, ticket: otherTicket, note: noteText)
                         modelContext.insert(entry)
                         try? modelContext.save()

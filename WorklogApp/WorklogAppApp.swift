@@ -32,7 +32,7 @@ struct WorklogAppApp: App {
             MenuBarContentView(timerState: timerState)
         } label: {
             HStack(spacing: 4) {
-                Image(systemName: timerState.isRunning ? "timer" : "clock")
+                Image(systemName: timerState.isRunning ? (timerState.isPaused ? "pause.circle" : "timer") : "clock")
                 if timerState.isRunning {
                     Text(timerState.formatElapsedTime())
                         .monospacedDigit()

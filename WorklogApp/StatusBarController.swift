@@ -6,6 +6,7 @@ class StatusBarController: ObservableObject {
     private var statusItem: NSStatusItem?
     @Published var timerState: TimerState
     var onStopTimer: (() -> Void)?
+    var onPauseResumeTimer: (() -> Void)?
     var openWindowAction: (() -> Void)?
     
     private var cancellables = Set<AnyCancellable>()
@@ -18,9 +19,9 @@ class StatusBarController: ObservableObject {
     
     private func observeTimerState() {
         timerState.$isRunning
-            .combineLatest(timerState.$elapsedTime)
+            .combineLatest(timerState.$elapsedTime, timerState.$isPaused)
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] _, _ in
+            .sink { [weak self] _, _, _ in
                 self?.updateButton()
             }
             .store(in: &cancellables)
@@ -43,6 +44,12 @@ class StatusBarController: ObservableObject {
         
         if timerState.isRunning {
             menu.addItem(NSMenuItem.separator())
+            
+            let pauseResumeTitle = timerState.isPaused ? "Resume Timer" : "Pause Timer"
+            let pauseResumeItem = NSMenuItem(title: pauseResumeTitle, action: #selector(pauseResumeTimer), keyEquivalent: "")
+            pauseResumeItem.target = self
+            menu.addItem(pauseResumeItem)
+            
             let stopItem = NSMenuItem(title: "Stop Timer", action: #selector(stopTimer), keyEquivalent: "")
             stopItem.target = self
             menu.addItem(stopItem)
@@ -68,6 +75,10 @@ class StatusBarController: ObservableObject {
         }
     }
     
+    @objc private func pauseResumeTimer() {
+        onPauseResumeTimer?()
+    }
+    
     @objc private func stopTimer() {
         onStopTimer?()
     }
@@ -85,13 +96,23 @@ class StatusBarController: ObservableObject {
         button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         
         if timerState.isRunning {
-            // Timer is running - orange icon with time
-            let symbolConfig = NSImage.SymbolConfiguration(paletteColors: [.systemOrange])
-            let image = NSImage(systemSymbolName: "timer.circle.fill", accessibilityDescription: "Timer Running")?.withSymbolConfiguration(symbolConfig)
-            
-            button.image = image
-            button.imagePosition = .imageLeading
-            button.title = timerState.formatElapsedTime()
+            if timerState.isPaused {
+                // Timer is paused - yellow icon with time
+                let symbolConfig = NSImage.SymbolConfiguration(paletteColors: [.systemYellow])
+                let image = NSImage(systemSymbolName: "pause.circle.fill", accessibilityDescription: "Timer Paused")?.withSymbolConfiguration(symbolConfig)
+                
+                button.image = image
+                button.imagePosition = .imageLeading
+                button.title = timerState.formatElapsedTime() + " ⏸"
+            } else {
+                // Timer is running - orange icon with time
+                let symbolConfig = NSImage.SymbolConfiguration(paletteColors: [.systemOrange])
+                let image = NSImage(systemSymbolName: "timer.circle.fill", accessibilityDescription: "Timer Running")?.withSymbolConfiguration(symbolConfig)
+                
+                button.image = image
+                button.imagePosition = .imageLeading
+                button.title = timerState.formatElapsedTime()
+            }
         } else {
             // Timer is stopped - gray icon without text
             let symbolConfig = NSImage.SymbolConfiguration(paletteColors: [.systemGray])

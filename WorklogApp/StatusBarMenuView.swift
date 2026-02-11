@@ -42,15 +42,29 @@ struct MenuBarContentView: View {
         if timerState.isRunning, let ticket = timerState.currentTicket {
             Text("Running: \(ticket.name)")
                 .font(.headline)
-            Text(timerState.formatElapsedTime())
-                .monospacedDigit()
-                .font(.system(.body, design: .monospaced))
+            HStack {
+                Text(timerState.formatElapsedTime())
+                    .monospacedDigit()
+                    .font(.system(.body, design: .monospaced))
+                if timerState.isPaused {
+                    Text("Paused")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            
+            Button(timerState.isPaused ? "Resume Timer" : "Pause Timer") {
+                if timerState.isPaused {
+                    timerState.resumeTimer()
+                } else {
+                    timerState.pauseTimer()
+                }
+            }
             
             Button("Stop Timer") {
                 if let result = timerState.stopTimer() {
-                    let elapsed = result.endDate.timeIntervalSince(result.startDate)
-                    if elapsed > 0 {
-                        let hours = elapsed / 3600
+                    if result.elapsed > 0 {
+                        let hours = result.elapsed / 3600
                         let entry = TimeEntry(hours: hours, ticket: ticket, note: nil)
                         modelContext.insert(entry)
                         
