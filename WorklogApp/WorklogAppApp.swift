@@ -20,7 +20,7 @@ struct WorklogAppApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     let modelContainer: ModelContainer
     @StateObject private var timerState = TimerState()
-    @StateObject private var settings = AppSettings()
+    @StateObject private var settings: AppSettings
     @StateObject private var jiraBridge: JiraBridge
 
     init() {
@@ -33,9 +33,9 @@ struct WorklogAppApp: App {
             fatalError("Failed to initialize ModelContainer: \(error)")
         }
 
-        // settings + jiraBridge wiring: bridge needs the same settings instance
-        // that the rest of the app reads. We can't use @StateObject in init, so
-        // we build them once and wrap in StateObject manually.
+        // Bridge needs the same AppSettings instance the rest of the app reads.
+        // Build both here so we share the reference; @StateObject preserves it
+        // across re-inits of the App struct.
         let settings = AppSettings()
         _settings = StateObject(wrappedValue: settings)
         _jiraBridge = StateObject(wrappedValue: JiraBridge(settings: settings))
