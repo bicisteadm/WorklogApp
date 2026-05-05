@@ -217,6 +217,133 @@ final class JiraBridge: ObservableObject {
         state = .disconnected
     }
 
+    // MARK: - Generic API access
+
+    enum JiraAPIError: LocalizedError {
+        case notConnected
+        case unauthorized
+        case notConfigured
+        case http(Int, String)
+        case malformed(String)
+        case scriptError(String)
+
+        var errorDescription: String? {
+            switch self {
+            case .notConnected:    return "Not connected to Jira. Open Settings → Connect."
+            case .unauthorized:    return "Jira session expired. Re-authenticate in Settings."
+            case .notConfigured:   return "Jira URL not set in Settings."
+            case .http(let code, let preview):
+                return "Jira returned HTTP \(code): \(preview)"
+            case .malformed(let m): return "Unexpected response: \(m)"
+            case .scriptError(let m): return "JS bridge error: \(m)"
+            }
+        }
+    }
+
+    /// GET a Jira REST endpoint as JSON, decoded into `T`. Path is everything
+    /// after the host (e.g. `/rest/api/2/myself` or `/rest/api/2/search?jql=...`).
+    /// Runs `fetch()` inside the WebView's page context — cookies, F5, CSRF
+    /// are all handled by the live browser session.
+    func getJSON<T: Decodable>(_ path: String, as: T.Type = T.self) async throws -> T {
+        try await fetchJSON(path: path, method: "GET", body: nil, decode: T.self)
+    }
+
+    /// POST a JSON body to a Jira REST endpoint, decoding the response.
+    func postJSON<Request: Encodable, Response: Decodable>(
+        _ path: String,
+        body: Request,
+        as: Response.Type = Response.self
+    ) async throws -> Response {
+        let data = try JSONEncoder().encode(body)
+        let bodyString = String(data: data, encoding: .utf8) ?? "{}"
+        return try await fetchJSON(path: path, method: "POST", body: bodyString, decode: Response.self)
+    }
+
+    private func fetchJSON<T: Decodable>(
+        path: String,
+        method: String,
+        body: String?,
+        decode: T.Type
+    ) async throws -> T {
+        guard settings.baseURL != nil else { throw JiraAPIError.notConfigured }
+
+        // Pass path/body as arguments so we don't have to escape into JS source.
+        var args: [String: Any] = [
+            "path": path,
+            "method": method
+        ]
+        if let body { args["body"] = body }
+
+        let js = """
+        try {
+          const opts = {
+            method: method,
+            credentials: 'include',
+            redirect: 'follow',
+            headers: {
+              'Accept': 'application/json',
+              'X-Atlassian-Token': 'no-check',
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          };
+          if (typeof body !== 'undefined') {
+            opts.body = body;
+            opts.headers['Content-Type'] = 'application/json';
+          }
+          const r = await fetch(path, opts);
+          const text = await r.text();
+          return {
+            ok: true,
+            status: r.status,
+            contentType: String(r.headers.get('content-type') || ''),
+            body: text
+          };
+        } catch (e) {
+          return { ok: false, error: String(e && e.message || e) };
+        }
+        """
+
+        let raw: Any?
+        do {
+            raw = try await webView.callAsyncJavaScript(js, arguments: args, in: nil, contentWorld: .page)
+        } catch {
+            navDelegate.log("API \(method) \(path): JS error: \(error.localizedDescription)")
+            throw JiraAPIError.scriptError(error.localizedDescription)
+        }
+
+        guard let dict = raw as? [String: Any] else {
+            throw JiraAPIError.malformed("non-object JS result")
+        }
+        if (dict["ok"] as? Bool) != true {
+            let err = (dict["error"] as? String) ?? "unknown"
+            navDelegate.log("API \(method) \(path): fetch failed: \(err)")
+            throw JiraAPIError.scriptError(err)
+        }
+
+        let status = (dict["status"] as? Int) ?? 0
+        let bodyText = (dict["body"] as? String) ?? ""
+
+        navDelegate.log("API \(method) \(path) → \(status) (\(bodyText.count) bytes)")
+
+        if status == 401 || status == 403 {
+            state = .disconnected
+            throw JiraAPIError.unauthorized
+        }
+        guard (200..<300).contains(status) else {
+            throw JiraAPIError.http(status, String(bodyText.prefix(200)))
+        }
+        guard let data = bodyText.data(using: .utf8) else {
+            throw JiraAPIError.malformed("non-UTF8 body")
+        }
+        do {
+            let decoder = JSONDecoder()
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            navDelegate.log("API \(method) \(path): decode error: \(error)")
+            throw JiraAPIError.malformed("decode: \(error.localizedDescription)")
+        }
+    }
+
     // MARK: - Internal helpers
 
     private func load(_ request: URLRequest) async {

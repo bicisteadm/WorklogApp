@@ -7,6 +7,10 @@ struct TicketDetailView: View {
     @Query private var iterations: [Iteration]
     @Query private var projects: [Project]
     @ObservedObject var timerState: TimerState
+    @EnvironmentObject var bridge: JiraBridge
+
+    @State private var jiraUpdateError: String?
+    @State private var isUpdatingFromJira = false
 
     // Manual log fields
     @State private var logHours: String = "0"
@@ -82,10 +86,23 @@ struct TicketDetailView: View {
     private var ticketInfoSection: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 12) {
-                if isEditing {
+                if ticket.isImported {
+                    importedBanner
+                }
+                if isEditing && !ticket.isImported {
                     editFormContent
                 } else {
                     viewModeContent
+                }
+                if let err = jiraUpdateError {
+                    HStack(spacing: 4) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Text(err)
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                            .textSelection(.enabled)
+                    }
                 }
             }
         } label: {
@@ -93,25 +110,64 @@ struct TicketDetailView: View {
                 Label("Ticket Details", systemImage: "doc.text")
                     .font(.headline)
                 Spacer()
-                if isEditing {
-                    Button("Cancel") { cancelEditing() }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                    Button("Save") { saveTicket() }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
-                        .disabled(editName.isEmpty)
-                } else {
-                    Button {
-                        startEditing()
-                    } label: {
-                        Label("Edit", systemImage: "pencil")
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
+                ticketInfoActions
             }
         }
+    }
+
+    @ViewBuilder
+    private var ticketInfoActions: some View {
+        if ticket.isImported {
+            Button {
+                Task { await updateFromJira() }
+            } label: {
+                if isUpdatingFromJira {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Label("Update from Jira", systemImage: "arrow.triangle.2.circlepath")
+                }
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .disabled(isUpdatingFromJira)
+        } else if isEditing {
+            Button("Cancel") { cancelEditing() }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            Button("Save") { saveTicket() }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .disabled(editName.isEmpty)
+        } else {
+            Button {
+                startEditing()
+            } label: {
+                Label("Edit", systemImage: "pencil")
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+    }
+
+    @ViewBuilder
+    private var importedBanner: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "link")
+                .foregroundStyle(.secondary)
+            Text("Imported from Jira")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+            if let last = ticket.jiraLastSync {
+                Text("· last synced \(last.formatted(date: .abbreviated, time: .shortened))")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Color.accentColor.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 4))
     }
 
     @ViewBuilder
@@ -647,6 +703,61 @@ struct TicketDetailView: View {
         ticket.dueDate = editShowDueDate ? editDueDate : nil
         try? modelContext.save()
         isEditing = false
+    }
+
+    /// Re-fetch this ticket's current state from Jira and apply it. Only valid
+    /// for imported tickets — for others the button isn't shown.
+    private func updateFromJira() async {
+        guard ticket.isImported, !ticket.ticketId.isEmpty else { return }
+        if case .connected = bridge.state {} else {
+            jiraUpdateError = "Not connected to Jira. Open Settings → Connect."
+            return
+        }
+        let project = ticket.project
+        let sprintFieldId = project?.jiraSprintFieldId
+
+        isUpdatingFromJira = true
+        jiraUpdateError = nil
+        defer { isUpdatingFromJira = false }
+
+        var fields = ["summary", "description", "duedate", "updated"]
+        if let sf = sprintFieldId { fields.append(sf) }
+        let path = "/rest/api/2/issue/\(ticket.ticketId)?fields=\(fields.joined(separator: ","))"
+
+        do {
+            let issue = try await bridge.getJSON(path, as: JiraIssue.self)
+            ticket.name = issue.fields.summary ?? ticket.name
+            ticket.detail = issue.fields.description ?? ""
+            if let due = issue.fields.duedate, let parsed = parseISODate(due) {
+                ticket.dueDate = parsed
+            } else if issue.fields.duedate == nil {
+                ticket.dueDate = nil
+            }
+            ticket.jiraIssueId = issue.id
+            ticket.jiraLastSync = Date()
+
+            // Try to update sprint assignment if we know the field
+            if let sf = sprintFieldId, let sprintValue = issue.raw[sf] {
+                let sprints = SprintParser.parse(sprintValue)
+                if let sprint = sprints.last,
+                   let proj = project,
+                   let iteration = proj.iterations.first(where: { $0.jiraSprintId == sprint.id }) {
+                    ticket.iteration = iteration
+                }
+            }
+
+            try? modelContext.save()
+        } catch {
+            jiraUpdateError = error.localizedDescription
+        }
+    }
+
+    private func parseISODate(_ s: String) -> Date? {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(secondsFromGMT: 0)
+        f.dateFormat = "yyyy-MM-dd"
+        return f.date(from: s)
     }
 }
 

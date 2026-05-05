@@ -20,6 +20,7 @@ enum SheetType: Identifiable {
     case newIteration
     case projectDetail(Project)
     case editProject(Project)
+    case jiraSync(Project)
 
     var id: String {
         switch self {
@@ -29,6 +30,7 @@ enum SheetType: Identifiable {
         case .newIteration: return "newIteration"
         case .projectDetail(let project): return "projectDetail-\(project.id)"
         case .editProject(let project): return "editProject-\(project.id)"
+        case .jiraSync(let project): return "jiraSync-\(project.id)"
         }
     }
 }

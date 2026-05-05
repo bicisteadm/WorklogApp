@@ -19,6 +19,7 @@ struct ContentView: View {
     @Query(sort: \Ticket.name) private var tickets: [Ticket]
 
     @ObservedObject var timerState: TimerState
+    @EnvironmentObject var bridge: JiraBridge
 
     @State private var selectedProject: Project?
     @State private var selectedIteration: Iteration?
@@ -178,6 +179,9 @@ struct ContentView: View {
             ProjectDetailView(project: project)
                 .padding()
                 .frame(width: 520, height: 450)
+        case .jiraSync(let project):
+            JiraSyncView(project: project, importer: JiraImporter(bridge: bridge))
+                .environmentObject(bridge)
         }
     }
 

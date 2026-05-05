@@ -64,11 +64,13 @@ struct EditProjectView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var name: String
     @State private var detail: String
+    @State private var jiraJQL: String
 
     init(project: Project) {
         self.project = project
         _name = State(initialValue: project.name)
         _detail = State(initialValue: project.detail)
+        _jiraJQL = State(initialValue: project.jiraJQL)
     }
 
     var body: some View {
@@ -89,6 +91,42 @@ struct EditProjectView: View {
 
             Divider()
 
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    Image(systemName: "link")
+                        .foregroundStyle(.secondary)
+                    Text("Jira sync")
+                        .font(.headline)
+                    if !jiraJQL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        StatusPill(text: "Enabled", color: .green)
+                    }
+                }
+
+                Text("Paste the JQL filter that selects issues for this project. Leave empty to disable Jira sync.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                TextEditor(text: $jiraJQL)
+                    .font(.system(.callout, design: .monospaced))
+                    .frame(height: 90)
+                    .scrollContentBackground(.hidden)
+                    .padding(4)
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                    )
+
+                if let last = project.lastJiraSync {
+                    Text("Last synced: \(last.formatted(date: .abbreviated, time: .shortened))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Divider()
+
             HStack {
                 Spacer()
                 Button("Cancel") { dismiss() }
@@ -100,13 +138,14 @@ struct EditProjectView: View {
             }
         }
         .padding()
-        .frame(width: 380)
+        .frame(width: 520)
     }
 
     private func saveProject() {
         guard !name.isEmpty else { return }
         project.name = name
         project.detail = detail
+        project.jiraJQL = jiraJQL.trimmingCharacters(in: .whitespacesAndNewlines)
         do {
             try modelContext.save()
             dismiss()

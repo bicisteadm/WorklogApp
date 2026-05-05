@@ -40,12 +40,26 @@ struct SidebarView: View {
                         HStack {
                             Label(project.name, systemImage: "folder.fill")
                                 .fontWeight(selectedProject?.id == project.id ? .semibold : .regular)
+                            if project.isJiraSynced {
+                                Image(systemName: "link")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .help("Jira-synced project")
+                            }
                             Spacer()
                             CountBadge(count: activeTicketCount(for: project))
                         }
                     }
                     .buttonStyle(.plain)
                     .contextMenu {
+                        if project.isJiraSynced {
+                            Button {
+                                presentedSheet = .jiraSync(project)
+                            } label: {
+                                Label("Sync from Jira", systemImage: "arrow.triangle.2.circlepath")
+                            }
+                            Divider()
+                        }
                         Button {
                             presentedSheet = .projectDetail(project)
                         } label: {

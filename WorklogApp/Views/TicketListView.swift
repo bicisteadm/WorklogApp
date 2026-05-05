@@ -125,14 +125,22 @@ struct TicketRowView: View {
                             .lineLimit(1)
                     }
 
-                    if !ticket.ticketId.isEmpty {
-                        Text(ticket.ticketId)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 1)
-                            .background(Color.accentColor.opacity(0.08))
-                            .clipShape(RoundedRectangle(cornerRadius: 3))
+                    HStack(spacing: 4) {
+                        if !ticket.ticketId.isEmpty {
+                            Text(ticket.ticketId)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(Color.accentColor.opacity(0.08))
+                                .clipShape(RoundedRectangle(cornerRadius: 3))
+                        }
+                        if ticket.isImported {
+                            Image(systemName: "link")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .help("Imported from Jira")
+                        }
                     }
                 }
 
