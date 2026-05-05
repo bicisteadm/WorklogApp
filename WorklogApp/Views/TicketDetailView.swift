@@ -2,19 +2,20 @@ import SwiftUI
 import SwiftData
 
 struct TicketDetailView: View {
-    let ticket: Ticket
+    @Bindable var ticket: Ticket
     @Environment(\.modelContext) private var modelContext
     @Query private var iterations: [Iteration]
-    @Binding var presentedSheet: SheetType?
+    @Query private var projects: [Project]
     @ObservedObject var timerState: TimerState
 
+    // Manual log fields
     @State private var logHours: String = "0"
     @State private var logMinutes: String = "30"
     @State private var logSeconds: String = "0"
     @State private var entryNote: String = ""
     @State private var logDate: Date = Date()
 
-    // Edit mode
+    // Inline edit
     @State private var isEditing = false
     @State private var editName: String = ""
     @State private var editDetail: String = ""
@@ -24,28 +25,16 @@ struct TicketDetailView: View {
     @State private var editStartDate: Date = Date()
     @State private var editDueDate: Date?
     @State private var editShowDueDate: Bool = false
-    @Query private var projects: [Project]
 
-    private var isTiming: Bool {
-        timerState.currentTicket?.id == ticket.id && timerState.isRunning
-    }
+    @State private var entryToEdit: TimeEntry?
 
-    private var isTimingPaused: Bool {
-        isTiming && timerState.isPaused
-    }
-
-    private var isContinuingEntry: Bool {
-        isTiming && timerState.continuingEntry != nil
-    }
-
-    private var availableIterations: [Iteration] {
-        guard let project = ticket.project else { return [] }
-        return iterations.filter { $0.project?.id == project.id }
-    }
-
-    private var editAvailableIterations: [Iteration] {
+    private var availableEditIterations: [Iteration] {
         guard let project = editProject else { return [] }
-        return iterations.filter { $0.project?.id == project.id }
+        // Keep the ticket's currently-assigned iteration available even if it's archived,
+        // so the user can see/preserve it; otherwise hide archived options.
+        return iterations.filter { iter in
+            iter.project?.id == project.id && (!iter.isArchived || iter.id == ticket.iteration?.id)
+        }
     }
 
     private static let timestampFormatter: DateFormatter = {
@@ -62,10 +51,6 @@ struct TicketDetailView: View {
 
     private var sortedEntries: [TimeEntry] {
         ticket.entries.sorted { $0.loggedAt > $1.loggedAt }
-    }
-
-    private func isEntryFromToday(_ entry: TimeEntry) -> Bool {
-        Calendar.current.isDateInToday(entry.loggedAt)
     }
 
     var body: some View {
@@ -86,6 +71,9 @@ struct TicketDetailView: View {
             .padding()
         }
         .navigationTitle(ticket.ticketId.isEmpty ? ticket.name : ticket.ticketId)
+        .sheet(item: $entryToEdit) { entry in
+            EditTimeEntryView(entry: entry)
+        }
     }
 
     // MARK: - Ticket Info
@@ -166,40 +154,28 @@ struct TicketDetailView: View {
     @ViewBuilder
     private var editFormContent: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Edit Ticket")
-                .font(.headline)
-                .foregroundStyle(.secondary)
-
             FormField("Ticket ID") {
-                TextField("", text: $editTicketId)
+                TextField("e.g. PROJ-123", text: $editTicketId)
                     .textFieldStyle(.roundedBorder)
             }
 
             FormField("Title") {
-                TextField("", text: $editName)
+                TextField("Ticket title", text: $editName)
                     .textFieldStyle(.roundedBorder)
             }
 
             FormField("Description") {
-                ZStack(alignment: .topLeading) {
-                    if editDetail.isEmpty {
-                        Text("Enter description...")
-                            .foregroundStyle(.secondary.opacity(0.5))
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 8)
-                    }
-                    TextEditor(text: $editDetail)
-                        .font(.body)
-                        .frame(height: 100)
-                        .scrollContentBackground(.hidden)
-                        .padding(4)
-                        .background(Color(nsColor: .controlBackgroundColor))
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
-                        )
-                }
+                TextEditor(text: $editDetail)
+                    .font(.body)
+                    .frame(height: 100)
+                    .scrollContentBackground(.hidden)
+                    .padding(4)
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                    )
             }
 
             HStack(spacing: 16) {
@@ -218,7 +194,7 @@ struct TicketDetailView: View {
                     FormField("Iteration") {
                         Picker("", selection: $editIteration) {
                             Text("None").tag(Iteration?.none)
-                            ForEach(editAvailableIterations) { iteration in
+                            ForEach(availableEditIterations) { iteration in
                                 Label(iteration.name, systemImage: iteration.type == .sprint ? "arrow.clockwise" : "flag").tag(Optional(iteration))
                             }
                         }
@@ -265,12 +241,17 @@ struct TicketDetailView: View {
             HStack(alignment: .center, spacing: 12) {
                 Image(systemName: iteration.type == .sprint ? "arrow.clockwise" : "flag.fill")
                     .font(.title3)
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(iteration.isArchived ? .secondary : Color.accentColor)
                     .frame(width: 32)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(iteration.name)
-                        .font(.headline)
+                    HStack(spacing: 6) {
+                        Text(iteration.name)
+                            .font(.headline)
+                        if iteration.isArchived {
+                            StatusPill(text: "Archived", color: .gray)
+                        }
+                    }
                     HStack(spacing: 4) {
                         Image(systemName: "calendar")
                             .font(.caption2)
@@ -333,66 +314,48 @@ struct TicketDetailView: View {
     @ViewBuilder
     private var timerSection: some View {
         GroupBox {
-            VStack(spacing: 10) {
-                HStack(spacing: 12) {
-                    // Timer icon & display
-                    HStack(spacing: 8) {
-                        if isTiming {
-                            Image(systemName: isTimingPaused ? "pause.circle.fill" : "timer")
-                                .foregroundStyle(isTimingPaused ? .yellow : .orange)
-                                .symbolEffect(.pulse, options: .repeating, isActive: !isTimingPaused)
-                                .font(.title3)
-                        } else {
-                            Image(systemName: "timer")
-                                .foregroundStyle(.secondary)
-                                .font(.title3)
-                        }
+            HStack(spacing: 12) {
+                LiveTimerLabel(timerState: timerState, ticket: ticket)
+                    .frame(minWidth: 110, alignment: .leading)
 
-                        Text(isTiming ? timerState.formatElapsedTime() : formatDuration(0))
-                            .monospacedDigit()
-                            .font(.system(.title3, design: .monospaced).weight(.bold))
-                            .foregroundStyle(isTiming ? (isTimingPaused ? .yellow : .orange) : .primary)
-                            .frame(minWidth: 90)
-                    }
+                TextField("Note (optional)", text: timerState.noteBinding(for: ticket))
+                    .textFieldStyle(.roundedBorder)
 
-                    // Note field
-                    TextField("Note (optional)", text: timerState.noteBinding(for: ticket))
-                        .textFieldStyle(.roundedBorder)
-
-                    // Controls
-                    if isTiming {
-                        Button {
-                            if isTimingPaused {
-                                timerState.resumeTimer()
-                            } else {
-                                timerState.pauseTimer()
-                            }
-                        } label: {
-                            Label(isTimingPaused ? "Resume" : "Pause", systemImage: isTimingPaused ? "play.circle" : "pause.circle")
-                        }
-                        .buttonStyle(.bordered)
-                        .tint(isTimingPaused ? .green : .yellow)
-                        .controlSize(.small)
-                    }
-
+                if timerState.isTiming(ticket) {
                     Button {
-                        toggleTimer()
+                        if timerState.isPaused {
+                            timerState.resume()
+                        } else {
+                            timerState.pause()
+                        }
                     } label: {
-                        Label(isTiming ? "Stop" : "Start", systemImage: isTiming ? "stop.circle.fill" : "play.circle.fill")
+                        Label(timerState.isPaused ? "Resume" : "Pause",
+                              systemImage: timerState.isPaused ? "play.circle" : "pause.circle")
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(isTiming ? .orange : .accentColor)
+                    .buttonStyle(.bordered)
+                    .tint(timerState.isPaused ? .green : .yellow)
                     .controlSize(.small)
                 }
+
+                Button {
+                    toggleTimer()
+                } label: {
+                    Label(timerState.isTiming(ticket) ? "Stop" : "Start",
+                          systemImage: timerState.isTiming(ticket) ? "stop.circle.fill" : "play.circle.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(timerState.isTiming(ticket) ? .orange : .accentColor)
+                .controlSize(.small)
+                .keyboardShortcut(timerState.isTiming(ticket) ? "." : "t", modifiers: .command)
             }
         } label: {
             HStack(spacing: 6) {
                 Label("Timer", systemImage: "stopwatch")
                     .font(.headline)
-                if isTiming {
-                    StatusPill(text: isTimingPaused ? "Paused" : "Running",
-                               color: isTimingPaused ? .yellow : .orange)
-                    if isContinuingEntry {
+                if timerState.isTiming(ticket) {
+                    StatusPill(text: timerState.isPaused ? "Paused" : "Running",
+                               color: timerState.isPaused ? .yellow : .orange)
+                    if timerState.continuingEntry != nil {
                         StatusPill(text: "Continuing", color: .green)
                     }
                 }
@@ -532,8 +495,9 @@ struct TicketDetailView: View {
 
     @ViewBuilder
     private func timeEntryRow(_ entry: TimeEntry) -> some View {
+        let continuingThis = timerState.isContinuing(entry)
         HStack(spacing: 12) {
-            if isContinuingEntry && timerState.continuingEntry?.id == entry.id {
+            if continuingThis {
                 Image(systemName: "arrow.trianglehead.counterclockwise")
                     .foregroundStyle(.green)
                     .font(.caption)
@@ -544,8 +508,8 @@ struct TicketDetailView: View {
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .textSelection(.enabled)
-                    if isContinuingEntry && timerState.continuingEntry?.id == entry.id {
-                        StatusPill(text: "Continuing...", color: .green)
+                    if continuingThis {
+                        StatusPill(text: "Continuing…", color: .green)
                     }
                 }
                 if let note = entry.note, !note.isEmpty {
@@ -556,16 +520,27 @@ struct TicketDetailView: View {
                 }
             }
             Spacer()
-            Text(formatDuration(entry.hours * 3600))
-                .monospacedDigit()
-                .font(.system(.body, design: .monospaced).weight(.semibold))
-                .foregroundStyle(Color.accentColor)
-                .textSelection(.enabled)
+            HStack(spacing: 8) {
+                if !timerState.isRunning {
+                    Button {
+                        continueEntry(entry)
+                    } label: {
+                        Image(systemName: "play.circle")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Continue this entry")
+                }
+                Text(formatDuration(entry.hours * 3600))
+                    .monospacedDigit()
+                    .font(.system(.body, design: .monospaced).weight(.semibold))
+                    .foregroundStyle(Color.accentColor)
+                    .textSelection(.enabled)
+            }
         }
         .padding(.vertical, 6)
         .contentShape(Rectangle())
         .contextMenu {
-            if isEntryFromToday(entry) && !isTiming {
+            if !timerState.isRunning {
                 Button {
                     continueEntry(entry)
                 } label: {
@@ -574,7 +549,7 @@ struct TicketDetailView: View {
                 Divider()
             }
             Button {
-                presentedSheet = .editTimeEntry(entry)
+                entryToEdit = entry
             } label: {
                 Label("Edit", systemImage: "pencil")
             }
@@ -600,8 +575,8 @@ struct TicketDetailView: View {
         let totalHours = Double(h) + (Double(m) / 60.0) + (Double(s) / 3600.0)
         guard totalHours > 0 else { return }
 
-        let noteText = entryNote.isEmpty ? nil : entryNote
-        let entry = TimeEntry(hours: totalHours, loggedAt: logDate, ticket: ticket, note: noteText)
+        let noteText = entryNote.trimmingCharacters(in: .whitespacesAndNewlines)
+        let entry = TimeEntry(hours: totalHours, loggedAt: logDate, ticket: ticket, note: noteText.isEmpty ? nil : noteText)
         modelContext.insert(entry)
 
         do {
@@ -617,95 +592,31 @@ struct TicketDetailView: View {
     }
 
     private func toggleTimer() {
-        if isTiming {
-            let note = timerState.getNote(for: ticket)
-            let noteText = note.isEmpty ? nil : note
-            timerState.clearNote(for: ticket)
-            guard let result = timerState.stopTimer() else { return }
-            guard result.elapsed > 0 else { return }
-
-            let hours = result.elapsed / 3600
-            if let existingEntry = result.continuingEntry {
-                existingEntry.hours += hours
-                if let newNote = noteText, !newNote.isEmpty {
-                    if let existing = existingEntry.note, !existing.isEmpty {
-                        existingEntry.note = existing + "; " + newNote
-                    } else {
-                        existingEntry.note = newNote
-                    }
-                }
-            } else {
-                let entry = TimeEntry(hours: hours, ticket: ticket, note: noteText)
-                modelContext.insert(entry)
-            }
-            try? modelContext.save()
+        if timerState.isTiming(ticket) {
+            timerState.stopAndPersist(in: modelContext)
         } else {
-            // Stop timer on another ticket first
-            if timerState.isRunning, let otherTicket = timerState.currentTicket {
-                let note = timerState.getNote(for: otherTicket)
-                let noteText = note.isEmpty ? nil : note
-                timerState.clearNote(for: otherTicket)
-                if let result = timerState.stopTimer() {
-                    if result.elapsed > 0 {
-                        let hours = result.elapsed / 3600
-                        if let existingEntry = result.continuingEntry {
-                            existingEntry.hours += hours
-                            if let newNote = noteText, !newNote.isEmpty {
-                                if let existing = existingEntry.note, !existing.isEmpty {
-                                    existingEntry.note = existing + "; " + newNote
-                                } else {
-                                    existingEntry.note = newNote
-                                }
-                            }
-                        } else {
-                            let entry = TimeEntry(hours: hours, ticket: otherTicket, note: noteText)
-                            modelContext.insert(entry)
-                        }
-                        try? modelContext.save()
-                    }
-                }
+            // Stop any running timer first (saves whatever was tracked).
+            if timerState.isRunning {
+                timerState.stopAndPersist(in: modelContext)
             }
-            timerState.startTimer(for: ticket)
+            timerState.start(for: ticket)
         }
     }
 
     private func continueEntry(_ entry: TimeEntry) {
-        // Stop any running timer first
-        if timerState.isRunning, let otherTicket = timerState.currentTicket {
-            let note = timerState.getNote(for: otherTicket)
-            let noteText = note.isEmpty ? nil : note
-            timerState.clearNote(for: otherTicket)
-            if let result = timerState.stopTimer() {
-                if result.elapsed > 0 {
-                    let hours = result.elapsed / 3600
-                    if let existingEntry = result.continuingEntry {
-                        existingEntry.hours += hours
-                        if let newNote = noteText, !newNote.isEmpty {
-                            if let existing = existingEntry.note, !existing.isEmpty {
-                                existingEntry.note = existing + "; " + newNote
-                            } else {
-                                existingEntry.note = newNote
-                            }
-                        }
-                    } else {
-                        let newEntry = TimeEntry(hours: hours, ticket: otherTicket, note: noteText)
-                        modelContext.insert(newEntry)
-                    }
-                    try? modelContext.save()
-                }
-            }
+        if timerState.isRunning {
+            timerState.stopAndPersist(in: modelContext)
         }
-
-        timerState.startTimer(for: ticket, continuing: entry)
-
-        // Pre-fill note from entry
+        timerState.start(for: ticket, continuing: entry)
         if let existingNote = entry.note, !existingNote.isEmpty {
-            let key = ticket.id.hashValue.description
-            timerState.ticketNotes[key] = existingNote
+            timerState.setNote(existingNote, for: ticket)
         }
     }
 
     private func deleteTimeEntry(_ entry: TimeEntry) {
+        if timerState.continuingEntry?.persistentModelID == entry.persistentModelID {
+            timerState.cancel()
+        }
         modelContext.delete(entry)
         try? modelContext.save()
     }
@@ -736,5 +647,37 @@ struct TicketDetailView: View {
         ticket.dueDate = editShowDueDate ? editDueDate : nil
         try? modelContext.save()
         isEditing = false
+    }
+}
+
+// MARK: - LiveTimerLabel
+
+/// Live timer label. Re-renders once per second when running, but it's a tiny
+/// leaf view so the cost is negligible. Heavy parents (`TicketRowView`) avoid
+/// observing `TimerState` and only get plain `let` flags.
+private struct LiveTimerLabel: View {
+    @ObservedObject var timerState: TimerState
+    let ticket: Ticket
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if timerState.isTiming(ticket) {
+                Image(systemName: timerState.isPaused ? "pause.circle.fill" : "timer")
+                    .foregroundStyle(timerState.isPaused ? .yellow : .orange)
+                    .font(.title3)
+                Text(formatDuration(timerState.elapsed))
+                    .monospacedDigit()
+                    .font(.system(.title3, design: .monospaced).weight(.bold))
+                    .foregroundStyle(timerState.isPaused ? .yellow : .orange)
+            } else {
+                Image(systemName: "timer")
+                    .foregroundStyle(.secondary)
+                    .font(.title3)
+                Text(formatDuration(0))
+                    .monospacedDigit()
+                    .font(.system(.title3, design: .monospaced).weight(.bold))
+                    .foregroundStyle(.primary)
+            }
+        }
     }
 }

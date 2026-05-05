@@ -7,7 +7,7 @@ struct MenuBarContentView: View {
 
     var body: some View {
         Button {
-            bringWindowToFront()
+            WindowOpener.bringMainToFront(openWindow: openWindow)
         } label: {
             Label("Open WorklogApp", systemImage: "clock.badge.checkmark")
         }
@@ -16,7 +16,6 @@ struct MenuBarContentView: View {
         Divider()
 
         if timerState.isRunning, let ticket = timerState.currentTicket {
-            // Timer info
             Label {
                 Text(ticket.name)
                     .lineLimit(1)
@@ -24,7 +23,8 @@ struct MenuBarContentView: View {
                 Image(systemName: timerState.isPaused ? "pause.circle.fill" : "timer")
             }
 
-            Text(timerState.formatElapsedTime())
+            // Custom-format snapshot is fine here: the menu re-renders each time it opens.
+            Text(timerState.formattedElapsed())
                 .monospacedDigit()
                 .font(.system(.body, design: .monospaced))
 
@@ -38,15 +38,15 @@ struct MenuBarContentView: View {
 
             Button(timerState.isPaused ? "Resume Timer" : "Pause Timer") {
                 if timerState.isPaused {
-                    timerState.resumeTimer()
+                    timerState.resume()
                 } else {
-                    timerState.pauseTimer()
+                    timerState.pause()
                 }
             }
             .keyboardShortcut("p")
 
             Button("Stop Timer") {
-                stopAndSaveTimer(ticket: ticket)
+                timerState.stopAndPersist(in: modelContext)
             }
             .keyboardShortcut("s")
 
@@ -61,53 +61,5 @@ struct MenuBarContentView: View {
             NSApplication.shared.terminate(nil)
         }
         .keyboardShortcut("q")
-    }
-
-    // MARK: - Helpers
-
-    private func bringWindowToFront() {
-        if let existingWindow = NSApp.windows.first(where: { window in
-            window.canBecomeKey &&
-            !(window is NSPanel) &&
-            window.styleMask.contains(.titled)
-        }) {
-            NSApp.activate(ignoringOtherApps: true)
-            if existingWindow.isMiniaturized {
-                existingWindow.deminiaturize(nil)
-            }
-            existingWindow.makeKeyAndOrderFront(nil)
-        } else {
-            openWindow(id: "main")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                NSApp.activate(ignoringOtherApps: true)
-                NSApp.windows.first(where: { $0.canBecomeKey && !($0 is NSPanel) && $0.styleMask.contains(.titled) })?
-                    .makeKeyAndOrderFront(nil)
-            }
-        }
-    }
-
-    private func stopAndSaveTimer(ticket: Ticket) {
-        let note = timerState.getNote(for: ticket)
-        let noteText = note.isEmpty ? nil : note
-        timerState.clearNote(for: ticket)
-
-        guard let result = timerState.stopTimer(), result.elapsed > 0 else { return }
-
-        let hours = result.elapsed / 3600
-        if let existingEntry = result.continuingEntry {
-            existingEntry.hours += hours
-            if let newNote = noteText, !newNote.isEmpty {
-                if let existing = existingEntry.note, !existing.isEmpty {
-                    existingEntry.note = existing + "; " + newNote
-                } else {
-                    existingEntry.note = newNote
-                }
-            }
-        } else {
-            let entry = TimeEntry(hours: hours, ticket: ticket, note: noteText)
-            modelContext.insert(entry)
-        }
-
-        try? modelContext.save()
     }
 }

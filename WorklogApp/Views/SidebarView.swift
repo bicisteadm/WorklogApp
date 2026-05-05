@@ -3,7 +3,8 @@ import SwiftData
 
 struct SidebarView: View {
     let projects: [Project]
-    let projectIterations: [Iteration]
+    let activeIterations: [Iteration]
+    let archivedIterations: [Iteration]
     @Binding var selectedProject: Project?
     @Binding var selectedIteration: Iteration?
     @Binding var presentedSheet: SheetType?
@@ -11,6 +12,9 @@ struct SidebarView: View {
     @Binding var showImportDB: Bool
     let onExportDB: () -> Void
     let onDeleteProject: (Project) -> Void
+
+    @Environment(\.modelContext) private var modelContext
+    @State private var showArchived = false
 
     var body: some View {
         List {
@@ -23,7 +27,7 @@ struct SidebarView: View {
                         Label("All Projects", systemImage: "tray.full.fill")
                             .fontWeight(selectedProject == nil ? .semibold : .regular)
                         Spacer()
-                        CountBadge(count: projects.reduce(0) { $0 + $1.tickets.count })
+                        CountBadge(count: activeTicketCount(for: nil))
                     }
                 }
                 .buttonStyle(.plain)
@@ -37,7 +41,7 @@ struct SidebarView: View {
                             Label(project.name, systemImage: "folder.fill")
                                 .fontWeight(selectedProject?.id == project.id ? .semibold : .regular)
                             Spacer()
-                            CountBadge(count: project.tickets.count)
+                            CountBadge(count: activeTicketCount(for: project))
                         }
                     }
                     .buttonStyle(.plain)
@@ -60,33 +64,37 @@ struct SidebarView: View {
                 }
             }
 
-            if selectedProject != nil && !projectIterations.isEmpty {
-                Section("Iterations") {
-                    Button {
-                        selectedIteration = nil
-                    } label: {
-                        Label("All Iterations", systemImage: "calendar")
-                            .fontWeight(selectedIteration == nil ? .semibold : .regular)
-                    }
-                    .buttonStyle(.plain)
-
-                    ForEach(projectIterations) { iteration in
+            if selectedProject != nil {
+                if !activeIterations.isEmpty {
+                    Section("Iterations") {
                         Button {
-                            selectedIteration = iteration
+                            selectedIteration = nil
                         } label: {
-                            HStack {
-                                Label(iteration.name, systemImage: iteration.type == .sprint ? "arrow.clockwise" : "flag.fill")
-                                    .fontWeight(selectedIteration?.id == iteration.id ? .semibold : .regular)
-                                Spacer()
-                                CountBadge(count: iteration.tickets.count)
-                                if isIterationActive(iteration) {
-                                    Circle()
-                                        .fill(Color.green)
-                                        .frame(width: 7, height: 7)
-                                }
-                            }
+                            Label("All Iterations", systemImage: "calendar")
+                                .fontWeight(selectedIteration == nil ? .semibold : .regular)
                         }
                         .buttonStyle(.plain)
+
+                        ForEach(activeIterations) { iteration in
+                            iterationRow(iteration, isArchived: false)
+                        }
+                    }
+                }
+
+                if !archivedIterations.isEmpty {
+                    Section {
+                        DisclosureGroup(isExpanded: $showArchived) {
+                            ForEach(archivedIterations) { iteration in
+                                iterationRow(iteration, isArchived: true)
+                            }
+                        } label: {
+                            HStack {
+                                Label("Archived", systemImage: "archivebox")
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                CountBadge(count: archivedIterations.count)
+                            }
+                        }
                     }
                 }
             }
@@ -127,6 +135,60 @@ struct SidebarView: View {
                 .accessibilityIdentifier("New Project")
             }
         }
+    }
+
+    @ViewBuilder
+    private func iterationRow(_ iteration: Iteration, isArchived: Bool) -> some View {
+        Button {
+            selectedIteration = iteration
+        } label: {
+            HStack {
+                Label(iteration.name, systemImage: iteration.type == .sprint ? "arrow.clockwise" : "flag.fill")
+                    .fontWeight(selectedIteration?.id == iteration.id ? .semibold : .regular)
+                    .foregroundStyle(isArchived ? .secondary : .primary)
+                Spacer()
+                CountBadge(count: iteration.tickets.count)
+                if !isArchived, isIterationActive(iteration) {
+                    Circle()
+                        .fill(Color.green)
+                        .frame(width: 7, height: 7)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button {
+                toggleArchive(iteration)
+            } label: {
+                Label(iteration.isArchived ? "Unarchive" : "Archive",
+                      systemImage: iteration.isArchived ? "tray.and.arrow.up" : "archivebox")
+            }
+        }
+    }
+
+    private func toggleArchive(_ iteration: Iteration) {
+        iteration.isArchived.toggle()
+        // If we just archived the currently-selected iteration, drop the selection so the
+        // ticket list doesn't keep showing archived tickets after the user expected them gone.
+        if iteration.isArchived, selectedIteration?.id == iteration.id {
+            selectedIteration = nil
+        }
+        try? modelContext.save()
+    }
+
+    /// Active tickets = tickets not in an archived iteration. Mirrors `filteredTickets`
+    /// in `ContentView` so the sidebar count agrees with what's displayed.
+    private func activeTicketCount(for project: Project?) -> Int {
+        let scope: [Ticket]
+        if let project {
+            scope = project.tickets
+        } else {
+            scope = projects.flatMap(\.tickets)
+        }
+        return scope.filter { ticket in
+            guard let iter = ticket.iteration else { return true }
+            return !iter.isArchived
+        }.count
     }
 
     private func isIterationActive(_ iteration: Iteration) -> Bool {

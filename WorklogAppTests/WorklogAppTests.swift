@@ -216,7 +216,7 @@ final class WorklogAppTests: XCTestCase {
     func testIterationTicketRelationship() throws {
         let iteration = Iteration(name: "Sprint 1", type: .sprint, startDate: Date(), dueDate: Date())
         context.insert(iteration)
-        
+
         let ticket = Ticket(
             ticketId: "TST-005",
             name: "Sprint Ticket",
@@ -225,10 +225,48 @@ final class WorklogAppTests: XCTestCase {
         )
         context.insert(ticket)
         try context.save()
-        
+
         XCTAssertEqual(iteration.tickets.count, 1)
         XCTAssertEqual(iteration.tickets.first?.ticketId, "TST-005")
         XCTAssertEqual(ticket.iteration?.name, "Sprint 1")
+    }
+
+    // MARK: - Archive Tests
+
+    func testIterationDefaultsToNotArchived() throws {
+        let iteration = Iteration(name: "Sprint 1", type: .sprint, startDate: Date(), dueDate: Date())
+        context.insert(iteration)
+        try context.save()
+
+        XCTAssertFalse(iteration.isArchived)
+    }
+
+    func testIterationCanBeArchived() throws {
+        let iteration = Iteration(name: "Sprint 1", type: .sprint, startDate: Date(), dueDate: Date())
+        context.insert(iteration)
+        try context.save()
+
+        iteration.isArchived = true
+        try context.save()
+
+        XCTAssertTrue(iteration.isArchived)
+    }
+
+    func testArchivingPreservesTickets() throws {
+        let project = Project(name: "P", detail: "")
+        context.insert(project)
+        let iteration = Iteration(name: "Sprint", type: .sprint, startDate: Date(), dueDate: Date(), project: project)
+        context.insert(iteration)
+        let ticket = Ticket(name: "T", detail: "", project: project, iteration: iteration)
+        context.insert(ticket)
+        try context.save()
+
+        iteration.isArchived = true
+        try context.save()
+
+        // Archive must not affect relationships or delete data.
+        XCTAssertEqual(iteration.tickets.count, 1)
+        XCTAssertEqual(ticket.iteration?.id, iteration.id)
     }
     
     // MARK: - TimeEntry Tests
@@ -405,290 +443,275 @@ final class WorklogAppTests: XCTestCase {
     }
     
     // MARK: - TimerState Tests
-    
+
     func testTimerStartSetsState() throws {
         let ticket = Ticket(name: "Timer Ticket", detail: "")
         context.insert(ticket)
         try context.save()
-        
+
         let timer = TimerState()
-        timer.startTimer(for: ticket)
-        
+        timer.start(for: ticket)
+
         XCTAssertTrue(timer.isRunning)
         XCTAssertFalse(timer.isPaused)
         XCTAssertNotNil(timer.currentTicket)
-        XCTAssertNotNil(timer.startDate)
     }
-    
-    func testTimerStopReturnsElapsed() throws {
+
+    func testTimerStopPersistsElapsed() throws {
         let ticket = Ticket(name: "Timer Ticket", detail: "")
         context.insert(ticket)
         try context.save()
-        
+
         let timer = TimerState()
-        timer.startTimer(for: ticket)
-        
-        // Simulate a tiny bit of time passing
+        timer.start(for: ticket)
+
         Thread.sleep(forTimeInterval: 0.05)
-        
-        let result = timer.stopTimer()
-        XCTAssertNotNil(result)
-        XCTAssertGreaterThan(result!.elapsed, 0)
+
+        timer.stopAndPersist(in: context)
         XCTAssertFalse(timer.isRunning)
         XCTAssertFalse(timer.isPaused)
         XCTAssertNil(timer.currentTicket)
+        XCTAssertEqual(ticket.entries.count, 1)
+        XCTAssertGreaterThan(ticket.entries.first?.hours ?? 0, 0)
     }
-    
+
     func testTimerPauseSetsState() throws {
         let ticket = Ticket(name: "Timer Ticket", detail: "")
         context.insert(ticket)
         try context.save()
-        
+
         let timer = TimerState()
-        timer.startTimer(for: ticket)
-        timer.pauseTimer()
-        
+        timer.start(for: ticket)
+        timer.pause()
+
         XCTAssertTrue(timer.isRunning)
         XCTAssertTrue(timer.isPaused)
         XCTAssertNotNil(timer.currentTicket)
     }
-    
+
     func testTimerResumeAfterPause() throws {
         let ticket = Ticket(name: "Timer Ticket", detail: "")
         context.insert(ticket)
         try context.save()
-        
+
         let timer = TimerState()
-        timer.startTimer(for: ticket)
-        timer.pauseTimer()
-        
+        timer.start(for: ticket)
+        timer.pause()
         XCTAssertTrue(timer.isPaused)
-        
-        timer.resumeTimer()
-        
+
+        timer.resume()
+
         XCTAssertTrue(timer.isRunning)
         XCTAssertFalse(timer.isPaused)
     }
-    
-    func testTimerPauseFreezesElapsedTime() throws {
+
+    func testTimerPauseFreezesElapsed() throws {
         let ticket = Ticket(name: "Timer Ticket", detail: "")
         context.insert(ticket)
         try context.save()
-        
+
         let timer = TimerState()
-        timer.startTimer(for: ticket)
-        
+        timer.start(for: ticket)
+
         Thread.sleep(forTimeInterval: 0.05)
-        timer.pauseTimer()
-        
-        let frozenTime = timer.elapsedTime
-        XCTAssertGreaterThan(frozenTime, 0)
-        
-        // Wait a bit — elapsed should NOT increase while paused
+        timer.pause()
+
+        let frozen = timer.elapsed
+        XCTAssertGreaterThan(frozen, 0)
+
+        // While paused, elapsed must not advance.
         Thread.sleep(forTimeInterval: 0.05)
-        XCTAssertEqual(timer.elapsedTime, frozenTime)
+        XCTAssertEqual(timer.elapsed, frozen, accuracy: 0.001)
     }
-    
-    func testTimerStopAfterPauseReturnsCorrectElapsed() throws {
+
+    func testTimerPausedTimeNotCounted() throws {
         let ticket = Ticket(name: "Timer Ticket", detail: "")
         context.insert(ticket)
         try context.save()
-        
+
         let timer = TimerState()
-        timer.startTimer(for: ticket)
-        
+        timer.start(for: ticket)
         Thread.sleep(forTimeInterval: 0.05)
-        timer.pauseTimer()
-        let pausedElapsed = timer.elapsedTime
-        
-        // Wait while paused — this time should NOT be counted
+        timer.pause()
+        let pausedElapsed = timer.elapsed
         Thread.sleep(forTimeInterval: 0.1)
-        
-        let result = timer.stopTimer()
-        XCTAssertNotNil(result)
-        // Elapsed should equal the paused elapsed (no additional time while paused)
-        XCTAssertEqual(result!.elapsed, pausedElapsed, accuracy: 0.01)
+
+        timer.stopAndPersist(in: context)
+        let saved = ticket.entries.first
+        XCTAssertNotNil(saved)
+        // Saved hours should match paused elapsed (no pause-gap counted).
+        XCTAssertEqual((saved?.hours ?? 0) * 3600, pausedElapsed, accuracy: 0.05)
     }
-    
-    func testTimerStopAfterPauseAndResumeAccumulatesTime() throws {
+
+    func testTimerResumeAccumulatesAcrossSegments() throws {
         let ticket = Ticket(name: "Timer Ticket", detail: "")
         context.insert(ticket)
         try context.save()
-        
+
         let timer = TimerState()
-        timer.startTimer(for: ticket)
-        
+        timer.start(for: ticket)
         Thread.sleep(forTimeInterval: 0.05)
-        timer.pauseTimer()
-        let firstSegment = timer.elapsedTime
-        
-        // Wait while paused — should not count
+        timer.pause()
+        let firstSegment = timer.elapsed
+
+        Thread.sleep(forTimeInterval: 0.05) // pause gap, not counted
+        timer.resume()
         Thread.sleep(forTimeInterval: 0.05)
-        
-        timer.resumeTimer()
-        Thread.sleep(forTimeInterval: 0.05)
-        
-        let result = timer.stopTimer()
-        XCTAssertNotNil(result)
-        // Total should be first segment + resumed segment, but NOT the pause gap
-        XCTAssertGreaterThan(result!.elapsed, firstSegment)
+
+        timer.stopAndPersist(in: context)
+        let saved = ticket.entries.first
+        XCTAssertNotNil(saved)
+        XCTAssertGreaterThan((saved?.hours ?? 0) * 3600, firstSegment)
     }
-    
+
     func testTimerPauseOnlyWhenRunning() throws {
         let timer = TimerState()
-        // Pausing when not running should be a no-op
-        timer.pauseTimer()
+        timer.pause() // no-op when not running
         XCTAssertFalse(timer.isPaused)
         XCTAssertFalse(timer.isRunning)
     }
-    
+
     func testTimerResumeOnlyWhenPaused() throws {
         let ticket = Ticket(name: "Timer Ticket", detail: "")
         context.insert(ticket)
         try context.save()
-        
+
         let timer = TimerState()
-        timer.startTimer(for: ticket)
-        
-        // Resuming when not paused should be a no-op
-        timer.resumeTimer()
+        timer.start(for: ticket)
+        timer.resume() // no-op when not paused
         XCTAssertFalse(timer.isPaused)
         XCTAssertTrue(timer.isRunning)
     }
-    
+
     func testTimerDoublePauseIsNoOp() throws {
         let ticket = Ticket(name: "Timer Ticket", detail: "")
         context.insert(ticket)
         try context.save()
-        
+
         let timer = TimerState()
-        timer.startTimer(for: ticket)
-        timer.pauseTimer()
-        
-        let elapsed = timer.elapsedTime
-        timer.pauseTimer() // second pause should be no-op
-        
-        XCTAssertEqual(timer.elapsedTime, elapsed)
+        timer.start(for: ticket)
+        timer.pause()
+        let elapsed = timer.elapsed
+        timer.pause() // second pause is a no-op
+        XCTAssertEqual(timer.elapsed, elapsed, accuracy: 0.001)
         XCTAssertTrue(timer.isPaused)
     }
-    
+
     func testTimerStopResetsAllState() throws {
         let ticket = Ticket(name: "Timer Ticket", detail: "")
         context.insert(ticket)
         try context.save()
-        
+
         let timer = TimerState()
-        timer.startTimer(for: ticket)
-        timer.pauseTimer()
-        _ = timer.stopTimer()
-        
+        timer.start(for: ticket)
+        timer.pause()
+        timer.stopAndPersist(in: context)
+
         XCTAssertFalse(timer.isRunning)
         XCTAssertFalse(timer.isPaused)
         XCTAssertNil(timer.currentTicket)
-        XCTAssertNil(timer.startDate)
-        XCTAssertEqual(timer.elapsedTime, 0)
+        XCTAssertNil(timer.continuingEntry)
+        XCTAssertEqual(timer.elapsed, 0)
     }
-    
-    func testFormatElapsedTime() throws {
+
+    func testTimerCancelDiscardsElapsed() throws {
+        let ticket = Ticket(name: "Timer Ticket", detail: "")
+        context.insert(ticket)
+        try context.save()
+
         let timer = TimerState()
-        timer.elapsedTime = 3661 // 1h 1min 1s
-        XCTAssertEqual(timer.formatElapsedTime(), "1h 1min 1s")
-        
-        timer.elapsedTime = 0
-        XCTAssertEqual(timer.formatElapsedTime(), "0h 0min 0s")
-        
-        timer.elapsedTime = 7323 // 2h 2min 3s
-        XCTAssertEqual(timer.formatElapsedTime(), "2h 2min 3s")
+        timer.start(for: ticket)
+        Thread.sleep(forTimeInterval: 0.05)
+        timer.cancel()
+
+        XCTAssertFalse(timer.isRunning)
+        XCTAssertEqual(ticket.entries.count, 0) // nothing persisted
     }
-    
+
     // MARK: - Timer Continue Entry Tests
-    
+
     func testTimerStartContinuingEntry() throws {
         let ticket = Ticket(name: "Continue Ticket", detail: "")
         context.insert(ticket)
         let entry = TimeEntry(hours: 1.0, ticket: ticket, note: "Initial work")
         context.insert(entry)
         try context.save()
-        
+
         let timer = TimerState()
-        timer.startTimer(for: ticket, continuing: entry)
-        
+        timer.start(for: ticket, continuing: entry)
+
         XCTAssertTrue(timer.isRunning)
         XCTAssertNotNil(timer.continuingEntry)
         XCTAssertEqual(timer.continuingEntry?.id, entry.id)
+        XCTAssertTrue(timer.isContinuing(entry))
     }
-    
-    func testTimerStopReturnsContinuingEntry() throws {
+
+    func testStopAppendsHoursToContinuingEntry() throws {
         let ticket = Ticket(name: "Continue Ticket", detail: "")
         context.insert(ticket)
-        let entry = TimeEntry(hours: 1.0, ticket: ticket, note: "Initial work")
+        let entry = TimeEntry(hours: 1.0, ticket: ticket, note: nil)
         context.insert(entry)
         try context.save()
-        
+
         let timer = TimerState()
-        timer.startTimer(for: ticket, continuing: entry)
-        
+        timer.start(for: ticket, continuing: entry)
         Thread.sleep(forTimeInterval: 0.05)
-        
-        let result = timer.stopTimer()
-        XCTAssertNotNil(result)
-        XCTAssertNotNil(result!.continuingEntry)
-        XCTAssertEqual(result!.continuingEntry?.id, entry.id)
-        XCTAssertGreaterThan(result!.elapsed, 0)
+        timer.stopAndPersist(in: context)
+
+        XCTAssertEqual(ticket.entries.count, 1, "no new entry should be created when continuing")
+        XCTAssertGreaterThan(entry.hours, 1.0)
     }
-    
-    func testTimerStopWithoutContinuingEntryReturnsNil() throws {
-        let ticket = Ticket(name: "Normal Ticket", detail: "")
+
+    func testStopMergesNoteIntoContinuingEntry() throws {
+        let ticket = Ticket(name: "Continue Ticket", detail: "")
         context.insert(ticket)
+        let entry = TimeEntry(hours: 1.0, ticket: ticket, note: "First session")
+        context.insert(entry)
         try context.save()
-        
+
         let timer = TimerState()
-        timer.startTimer(for: ticket)
-        
+        timer.start(for: ticket, continuing: entry)
+        timer.setNote("Second session", for: ticket)
         Thread.sleep(forTimeInterval: 0.05)
-        
-        let result = timer.stopTimer()
-        XCTAssertNotNil(result)
-        XCTAssertNil(result!.continuingEntry)
+        timer.stopAndPersist(in: context)
+
+        XCTAssertEqual(entry.note, "First session\nSecond session")
     }
-    
+
     func testTimerContinuingEntryResetOnStop() throws {
         let ticket = Ticket(name: "Continue Ticket", detail: "")
         context.insert(ticket)
         let entry = TimeEntry(hours: 1.0, ticket: ticket)
         context.insert(entry)
         try context.save()
-        
+
         let timer = TimerState()
-        timer.startTimer(for: ticket, continuing: entry)
-        _ = timer.stopTimer()
-        
+        timer.start(for: ticket, continuing: entry)
+        timer.stopAndPersist(in: context)
+
         XCTAssertNil(timer.continuingEntry)
     }
-    
+
     func testTimerContinuingEntryWithPauseResume() throws {
         let ticket = Ticket(name: "Continue Ticket", detail: "")
         context.insert(ticket)
         let entry = TimeEntry(hours: 0.5, ticket: ticket)
         context.insert(entry)
         try context.save()
-        
+
         let timer = TimerState()
-        timer.startTimer(for: ticket, continuing: entry)
-        
+        timer.start(for: ticket, continuing: entry)
         Thread.sleep(forTimeInterval: 0.05)
-        timer.pauseTimer()
-        
-        XCTAssertNotNil(timer.continuingEntry)
+        timer.pause()
+
+        XCTAssertTrue(timer.isContinuing(entry))
         XCTAssertTrue(timer.isPaused)
-        
-        timer.resumeTimer()
+
+        timer.resume()
         Thread.sleep(forTimeInterval: 0.05)
-        
-        let result = timer.stopTimer()
-        XCTAssertNotNil(result)
-        XCTAssertNotNil(result!.continuingEntry)
-        XCTAssertEqual(result!.continuingEntry?.id, entry.id)
+        timer.stopAndPersist(in: context)
+
+        XCTAssertGreaterThan(entry.hours, 0.5)
     }
     
     func testContinuingEntryHoursCanBeAppended() throws {

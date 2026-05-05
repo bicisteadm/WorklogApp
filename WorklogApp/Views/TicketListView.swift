@@ -4,9 +4,10 @@ import SwiftData
 struct TicketListView: View {
     let tickets: [Ticket]
     @Binding var selectedTicket: Ticket?
-    @Binding var presentedSheet: SheetType?
     @ObservedObject var timerState: TimerState
     let projectName: String?
+    let onNewTicket: () -> Void
+    let onBulkImport: () -> Void
     let onDeleteTicket: (Ticket) -> Void
 
     var body: some View {
@@ -24,19 +25,23 @@ struct TicketListView: View {
             } else {
                 Section("Tickets") {
                     ForEach(tickets) { ticket in
-                        TicketRowView(ticket: ticket, timerState: timerState)
-                            .tag(ticket)
-                            .contextMenu {
-                                Button {
-                                    presentedSheet = .editTicket(ticket)
-                                } label: {
-                                    Label("Edit", systemImage: "pencil")
-                                }
-                                Divider()
-                                Button("Delete", role: .destructive) {
-                                    onDeleteTicket(ticket)
-                                }
+                        TicketRowView(
+                            ticket: ticket,
+                            isTimerActiveHere: timerState.isTiming(ticket),
+                            isPaused: timerState.isPaused
+                        )
+                        .tag(ticket)
+                        .contextMenu {
+                            Button {
+                                selectedTicket = ticket
+                            } label: {
+                                Label("Open", systemImage: "doc.text")
                             }
+                            Divider()
+                            Button("Delete", role: .destructive) {
+                                onDeleteTicket(ticket)
+                            }
+                        }
                     }
                 }
             }
@@ -55,7 +60,7 @@ struct TicketListView: View {
                             Text(timerTicket.name)
                                 .font(.subheadline.weight(.medium))
                                 .lineLimit(1)
-                            Text(timerState.formatElapsedTime())
+                            Text(formatDuration(timerState.elapsed))
                                 .monospacedDigit()
                                 .font(.system(.caption, design: .monospaced).weight(.semibold))
                             if timerState.isPaused {
@@ -74,12 +79,12 @@ struct TicketListView: View {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
                     Button {
-                        presentedSheet = .newTicket
+                        onNewTicket()
                     } label: {
                         Label("Single Ticket", systemImage: "plus")
                     }
                     Button {
-                        presentedSheet = .bulkTickets
+                        onBulkImport()
                     } label: {
                         Label("Bulk Import", systemImage: "square.and.pencil")
                     }
@@ -93,13 +98,12 @@ struct TicketListView: View {
 
 // MARK: - Ticket Row
 
+/// Row uses plain `let` flags from the parent rather than observing `TimerState`
+/// directly. Result: per-second timer publishes don't repaint every row.
 struct TicketRowView: View {
     let ticket: Ticket
-    @ObservedObject var timerState: TimerState
-
-    private var isTimerActive: Bool {
-        timerState.currentTicket?.id == ticket.id && timerState.isRunning
-    }
+    let isTimerActiveHere: Bool
+    let isPaused: Bool
 
     private var totalSeconds: TimeInterval {
         ticket.entries.reduce(0) { $0 + ($1.hours * 3600) }
@@ -107,15 +111,14 @@ struct TicketRowView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            // Title row
             HStack(alignment: .top, spacing: 6) {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 5) {
-                        if isTimerActive {
-                            Image(systemName: timerState.isPaused ? "pause.circle.fill" : "timer")
+                        if isTimerActiveHere {
+                            Image(systemName: isPaused ? "pause.circle.fill" : "timer")
                                 .font(.caption)
-                                .foregroundStyle(timerState.isPaused ? .yellow : .orange)
-                                .symbolEffect(.pulse, options: .repeating, isActive: !timerState.isPaused)
+                                .foregroundStyle(isPaused ? .yellow : .orange)
+                                .symbolEffect(.pulse, options: .repeating, isActive: !isPaused)
                         }
                         Text(ticket.name)
                             .font(.headline)
@@ -141,7 +144,6 @@ struct TicketRowView: View {
                     .monospacedDigit()
             }
 
-            // Metadata row
             HStack(spacing: 8) {
                 if let project = ticket.project {
                     Label(project.name, systemImage: "folder")

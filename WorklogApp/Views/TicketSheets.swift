@@ -31,7 +31,7 @@ struct NewTicketView: View {
 
     private var availableIterations: [Iteration] {
         guard let project = projectSelection else { return [] }
-        return iterations.filter { $0.project?.id == project.id }
+        return iterations.filter { $0.project?.id == project.id && !$0.isArchived }
     }
 
     var body: some View {
@@ -145,152 +145,6 @@ struct NewTicketView: View {
     }
 }
 
-// MARK: - Edit Ticket
-
-struct EditTicketView: View {
-    let ticket: Ticket
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
-    @Query private var iterations: [Iteration]
-
-    @State private var ticketId: String
-    @State private var name: String
-    @State private var detail: String
-    @State private var startDate: Date
-    @State private var dueDate: Date?
-    @State private var showDueDate: Bool
-    @State private var projectSelection: Project?
-    @State private var iterationSelection: Iteration?
-    let projects: [Project]
-
-    init(ticket: Ticket, projects: [Project]) {
-        self.ticket = ticket
-        self.projects = projects
-        _ticketId = State(initialValue: ticket.ticketId)
-        _name = State(initialValue: ticket.name)
-        _detail = State(initialValue: ticket.detail)
-        _startDate = State(initialValue: ticket.startDate)
-        _dueDate = State(initialValue: ticket.dueDate)
-        _showDueDate = State(initialValue: ticket.dueDate != nil)
-        _projectSelection = State(initialValue: ticket.project)
-        _iterationSelection = State(initialValue: ticket.iteration)
-    }
-
-    private var availableIterations: [Iteration] {
-        guard let project = projectSelection else { return [] }
-        return iterations.filter { $0.project?.id == project.id }
-    }
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                Text("Edit Ticket")
-                    .font(.title2.weight(.bold))
-
-                FormField("Ticket ID") {
-                    TextField("e.g. PROJ-123", text: $ticketId)
-                        .textFieldStyle(.roundedBorder)
-                }
-
-                FormField("Title") {
-                    TextField("Ticket title", text: $name)
-                        .textFieldStyle(.roundedBorder)
-                }
-
-                FormField("Description") {
-                    TextEditor(text: $detail)
-                        .font(.body)
-                        .frame(height: 80)
-                        .scrollContentBackground(.hidden)
-                        .padding(4)
-                        .background(Color(nsColor: .controlBackgroundColor))
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
-                        )
-                }
-
-                Divider()
-
-                FormField("Project") {
-                    Picker("", selection: $projectSelection) {
-                        Text("None").tag(Project?.none)
-                        ForEach(projects) { project in
-                            Text(project.name).tag(Optional(project))
-                        }
-                    }
-                    .labelsHidden()
-                }
-                .onChange(of: projectSelection) { _, _ in
-                    if let currentIteration = iterationSelection,
-                       !availableIterations.contains(where: { $0.id == currentIteration.id }) {
-                        iterationSelection = nil
-                    }
-                }
-
-                if projectSelection != nil {
-                    FormField("Iteration") {
-                        Picker("", selection: $iterationSelection) {
-                            Text("None").tag(Iteration?.none)
-                            ForEach(availableIterations) { iteration in
-                                Label(iteration.name, systemImage: iteration.type == .sprint ? "arrow.clockwise" : "flag").tag(Optional(iteration))
-                            }
-                        }
-                        .labelsHidden()
-                    }
-                }
-
-                Divider()
-
-                FormField("Start Date") {
-                    DatePicker("", selection: $startDate, displayedComponents: [.date])
-                        .labelsHidden()
-                }
-
-                Toggle("Due Date", isOn: $showDueDate)
-                if showDueDate {
-                    DatePicker("", selection: Binding(
-                        get: { dueDate ?? Date() },
-                        set: { dueDate = $0 }
-                    ), displayedComponents: [.date])
-                    .labelsHidden()
-                }
-
-                Divider()
-
-                HStack {
-                    Spacer()
-                    Button("Cancel") { dismiss() }
-                        .keyboardShortcut(.cancelAction)
-                    Button("Save") { saveTicket() }
-                        .keyboardShortcut(.defaultAction)
-                        .buttonStyle(.borderedProminent)
-                        .disabled(name.isEmpty)
-                }
-            }
-            .padding()
-        }
-    }
-
-    private func saveTicket() {
-        guard !name.isEmpty else { return }
-        ticket.ticketId = ticketId
-        ticket.name = name
-        ticket.detail = detail
-        ticket.startDate = startDate
-        ticket.dueDate = showDueDate ? dueDate : nil
-        ticket.project = projectSelection
-        ticket.iteration = iterationSelection
-        do {
-            try modelContext.save()
-            dismiss()
-        } catch {
-            print("Failed to save ticket: \(error)")
-        }
-    }
-}
-
 // MARK: - Bulk Ticket Import
 
 struct BulkTicketView: View {
@@ -313,7 +167,7 @@ struct BulkTicketView: View {
 
     private var availableIterations: [Iteration] {
         guard let project = projectSelection else { return [] }
-        return iterations.filter { $0.project?.id == project.id }
+        return iterations.filter { $0.project?.id == project.id && !$0.isArchived }
     }
 
     var body: some View {

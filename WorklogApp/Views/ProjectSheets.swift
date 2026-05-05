@@ -167,6 +167,8 @@ struct ProjectDetailView: View {
                         ForEach(sortedIterations) { iteration in
                             IterationRowView(iteration: iteration, onEdit: {
                                 editingIteration = iteration
+                            }, onToggleArchive: {
+                                toggleArchive(iteration)
                             }, onDelete: {
                                 deleteIteration(iteration)
                             })
@@ -205,6 +207,11 @@ struct ProjectDetailView: View {
         modelContext.delete(iteration)
         try? modelContext.save()
     }
+
+    private func toggleArchive(_ iteration: Iteration) {
+        iteration.isArchived.toggle()
+        try? modelContext.save()
+    }
 }
 
 // MARK: - Iteration Row
@@ -212,6 +219,7 @@ struct ProjectDetailView: View {
 struct IterationRowView: View {
     let iteration: Iteration
     let onEdit: () -> Void
+    let onToggleArchive: () -> Void
     let onDelete: () -> Void
 
     var ticketCount: Int {
@@ -220,7 +228,7 @@ struct IterationRowView: View {
 
     var isActive: Bool {
         let now = Date()
-        return iteration.startDate <= now && now <= iteration.dueDate
+        return !iteration.isArchived && iteration.startDate <= now && now <= iteration.dueDate
     }
 
     var body: some View {
@@ -229,13 +237,17 @@ struct IterationRowView: View {
                 HStack {
                     Label(iteration.name, systemImage: iteration.type == .sprint ? "arrow.clockwise" : "flag.fill")
                         .font(.headline)
+                        .foregroundStyle(iteration.isArchived ? .secondary : .primary)
                     Spacer()
-                    if isActive {
+                    if iteration.isArchived {
+                        StatusPill(text: "Archived", color: .gray)
+                    } else if isActive {
                         StatusPill(text: "Active", color: .green)
                     }
 
                     Menu {
                         Button("Edit") { onEdit() }
+                        Button(iteration.isArchived ? "Unarchive" : "Archive") { onToggleArchive() }
                         Divider()
                         Button("Delete", role: .destructive) { onDelete() }
                     } label: {

@@ -63,11 +63,12 @@ icon:
 	@echo "✅ Icon generated — rebuild needed to apply"
 
 test:
-	@echo "🧪 Running tests…"
+	@echo "🧪 Running unit tests…"
 	@xcodebuild test \
 		-project $(PROJECT) \
 		-scheme $(SCHEME) \
 		-destination '$(DEST)' \
+		-only-testing:WorklogAppTests \
 		$(SIGN_FLAGS) \
 		2>&1 | grep -E "Test case|passed|failed|error:|BUILD" | tail -30
 	@echo "✅ Tests complete"

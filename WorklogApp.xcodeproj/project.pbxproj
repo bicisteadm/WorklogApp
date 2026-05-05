@@ -13,7 +13,6 @@
 		1F1F8B212D8F0001007D0001 /* TimeEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F1F8B0F2D8F0001007D0001 /* TimeEntry.swift */; };
 		1FF5E9C22E00000100123456 /* Project.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FF5E9C12E00000100123456 /* Project.swift */; };
 		66F0B6382F0D3320001A90C7 /* Iteration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66F0B6372F0D3320001A90C7 /* Iteration.swift */; };
-		66F0B6622F0E81D9001A90C7 /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66F0B6612F0E81D9001A90C7 /* StatusBarController.swift */; };
 		66F0B6642F0E99AB001A90C7 /* TimerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66F0B6632F0E99AB001A90C7 /* TimerState.swift */; };
 		66F0B6662F0EA1A4001A90C7 /* StatusBarMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66F0B6652F0EA1A4001A90C7 /* StatusBarMenuView.swift */; };
 		66F0B6682F0EA1AF001A90C7 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 66F0B6672F0EA1AF001A90C7 /* Info.plist */; };
@@ -56,7 +55,6 @@
 		66F0B6372F0D3320001A90C7 /* Iteration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Iteration.swift; sourceTree = "<group>"; };
 		66F0B6452F0D3ADE001A90C7 /* WorklogAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WorklogAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		66F0B6522F0D3B1A001A90C7 /* WorklogAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WorklogAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		66F0B6612F0E81D9001A90C7 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
 		66F0B6632F0E99AB001A90C7 /* TimerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerState.swift; sourceTree = "<group>"; };
 		66F0B6652F0EA1A4001A90C7 /* StatusBarMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarMenuView.swift; sourceTree = "<group>"; };
 		66F0B6672F0EA1AF001A90C7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -127,7 +125,6 @@
 				66F0B6672F0EA1AF001A90C7 /* Info.plist */,
 				66F0B6652F0EA1A4001A90C7 /* StatusBarMenuView.swift */,
 				66F0B6632F0E99AB001A90C7 /* TimerState.swift */,
-				66F0B6612F0E81D9001A90C7 /* StatusBarController.swift */,
 				1F1F8B0C2D8F0001007D0001 /* WorklogAppApp.swift */,
 				1F1F8B0D2D8F0001007D0001 /* ContentView.swift */,
 				CC00000C2F10000100000001 /* Views */,
@@ -304,7 +301,6 @@
 			files = (
 				66F0B6662F0EA1A4001A90C7 /* StatusBarMenuView.swift in Sources */,
 				1F1F8B212D8F0001007D0001 /* TimeEntry.swift in Sources */,
-				66F0B6622F0E81D9001A90C7 /* StatusBarController.swift in Sources */,
 				1FF5E9C22E00000100123456 /* Project.swift in Sources */,
 				1F1F8B202D8F0001007D0001 /* Ticket.swift in Sources */,
 				66F0B6382F0D3320001A90C7 /* Iteration.swift in Sources */,

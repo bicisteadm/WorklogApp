@@ -3,8 +3,6 @@ import SwiftData
 import UniformTypeIdentifiers
 import AppKit
 
-// MARK: - Preference keys for persisting column widths
-
 private struct SidebarWidthKey: PreferenceKey {
     static var defaultValue: Double = 200
     static func reduce(value: inout Double, nextValue: () -> Double) { value = nextValue() }
@@ -31,7 +29,6 @@ struct ContentView: View {
     @AppStorage("sidebarWidth") private var sidebarWidth: Double = 200
     @AppStorage("contentWidth") private var contentWidth: Double = 280
 
-    // Database backup/restore
     @State private var showImportDB = false
     @State private var showBackupAlert = false
     @State private var backupMessage = ""
@@ -42,21 +39,49 @@ struct ContentView: View {
             result = result.filter { $0.project?.id == project.id }
         }
         if let iteration = selectedIteration {
+            // User picked a specific iteration — show its tickets even if archived.
             result = result.filter { $0.iteration?.id == iteration.id }
+        } else {
+            // No specific iteration selected — hide tickets that belong to an archived one.
+            result = result.filter { ticket in
+                guard let iter = ticket.iteration else { return true }
+                return !iter.isArchived
+            }
         }
         return result
     }
 
-    private var projectIterations: [Iteration] {
+    private var projectActiveIterations: [Iteration] {
         guard let project = selectedProject else { return [] }
-        return project.iterations.sorted { $0.startDate > $1.startDate }
+        return project.iterations
+            .filter { !$0.isArchived }
+            .sorted { $0.startDate > $1.startDate }
+    }
+
+    private var projectArchivedIterations: [Iteration] {
+        guard let project = selectedProject else { return [] }
+        return project.iterations
+            .filter { $0.isArchived }
+            .sorted { $0.startDate > $1.startDate }
+    }
+
+    /// Resolve the ticket to show in the detail pane. The selection lives in
+    /// `selectedTicket`, but we tolerate it pointing at a ticket that no longer
+    /// matches the current filter — in that case fall back to the first match.
+    /// This avoids a stale selection flashing when filters change.
+    private var detailTicket: Ticket? {
+        if let selected = selectedTicket, filteredTickets.contains(where: { $0.id == selected.id }) {
+            return selected
+        }
+        return filteredTickets.first
     }
 
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             SidebarView(
                 projects: projects,
-                projectIterations: projectIterations,
+                activeIterations: projectActiveIterations,
+                archivedIterations: projectArchivedIterations,
                 selectedProject: $selectedProject,
                 selectedIteration: $selectedIteration,
                 presentedSheet: $presentedSheet,
@@ -74,9 +99,10 @@ struct ContentView: View {
             TicketListView(
                 tickets: filteredTickets,
                 selectedTicket: $selectedTicket,
-                presentedSheet: $presentedSheet,
                 timerState: timerState,
                 projectName: selectedProject?.name,
+                onNewTicket: { presentedSheet = .newTicket },
+                onBulkImport: { presentedSheet = .bulkTickets },
                 onDeleteTicket: deleteTicket
             )
             .navigationSplitViewColumnWidth(min: 200, ideal: contentWidth, max: 500)
@@ -85,10 +111,9 @@ struct ContentView: View {
             })
             .onPreferenceChange(ContentWidthKey.self) { contentWidth = $0 }
         } detail: {
-            if let ticket = selectedTicket ?? filteredTickets.first {
+            if let ticket = detailTicket {
                 TicketDetailView(
                     ticket: ticket,
-                    presentedSheet: $presentedSheet,
                     timerState: timerState
                 )
                 .id(ticket.id)
@@ -104,37 +129,13 @@ struct ContentView: View {
         .sheet(item: $presentedSheet) { sheet in
             sheetContent(for: sheet)
         }
-        .onChange(of: tickets) { _, newValue in
-            if let selected = selectedTicket, !newValue.contains(where: { $0.id == selected.id }) {
-                selectedTicket = nil
-            }
-        }
-        .onChange(of: selectedProject) { _, newProject in
+        .onChange(of: selectedProject) { _, _ in
+            // Project switched — clear any iteration filter from the previous project.
             selectedIteration = nil
-            let filtered = tickets.filter { ticket in
-                guard let proj = newProject else { return true }
-                return ticket.project?.id == proj.id
-            }
-            selectedTicket = filtered.first
-        }
-        .onChange(of: selectedIteration) { _, newIteration in
-            let filtered = tickets.filter { ticket in
-                if let proj = selectedProject {
-                    guard ticket.project?.id == proj.id else { return false }
-                }
-                if let iter = newIteration {
-                    guard ticket.iteration?.id == iter.id else { return false }
-                }
-                return true
-            }
-            selectedTicket = filtered.first
         }
         .onAppear {
             if selectedProject == nil {
                 selectedProject = projects.first
-            }
-            if selectedTicket == nil {
-                selectedTicket = filteredTickets.first
             }
         }
         .fileImporter(isPresented: $showImportDB, allowedContentTypes: [.data]) { result in
@@ -167,9 +168,6 @@ struct ContentView: View {
             }
         case .editProject(let project):
             EditProjectView(project: project)
-        case .editTicket(let ticket):
-            EditTicketView(ticket: ticket, projects: projects)
-                .frame(width: 420)
         case .newIteration:
             if let project = selectedProject {
                 NewIterationView(project: project)
@@ -180,8 +178,6 @@ struct ContentView: View {
             ProjectDetailView(project: project)
                 .padding()
                 .frame(width: 520, height: 450)
-        case .editTimeEntry(let entry):
-            EditTimeEntryView(entry: entry)
         }
     }
 
@@ -199,6 +195,9 @@ struct ContentView: View {
     private func deleteTicket(_ ticket: Ticket) {
         if selectedTicket?.id == ticket.id {
             selectedTicket = nil
+        }
+        if timerState.currentTicket?.id == ticket.id {
+            timerState.cancel()
         }
         modelContext.delete(ticket)
         try? modelContext.save()
