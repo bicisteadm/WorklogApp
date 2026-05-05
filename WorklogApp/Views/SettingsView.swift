@@ -4,6 +4,7 @@ struct SettingsView: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var bridge: JiraBridge
     @Environment(\.openWindow) private var openWindow
+    @State private var showDiagnostics = false
 
     var body: some View {
         TabView {
@@ -11,7 +12,7 @@ struct SettingsView: View {
                 .tabItem { Label("Jira", systemImage: "link") }
         }
         .scenePadding()
-        .frame(width: 540, height: 380)
+        .frame(width: 620, height: showDiagnostics ? 580 : 420)
     }
 
     private var jiraTab: some View {
@@ -67,8 +68,58 @@ struct SettingsView: View {
                     }
                 }
             }
+
+            Section {
+                Toggle("Show diagnostic log", isOn: $showDiagnostics)
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+
+                HStack(spacing: 6) {
+                    Image(systemName: "info.circle")
+                        .foregroundStyle(.secondary)
+                    Text(bridge.navDelegate.lastEvent)
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .truncationMode(.middle)
+                        .textSelection(.enabled)
+                }
+
+                if showDiagnostics {
+                    diagnosticPanel
+                }
+            } header: {
+                Text("Diagnostics")
+            }
         }
         .formStyle(.grouped)
+    }
+
+    @ViewBuilder
+    private var diagnosticPanel: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 1) {
+                    ForEach(Array(bridge.navDelegate.diagnosticLog.enumerated()), id: \.offset) { idx, line in
+                        Text(line)
+                            .font(.system(.caption2, design: .monospaced))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .textSelection(.enabled)
+                            .id(idx)
+                    }
+                }
+                .padding(8)
+            }
+            .frame(height: 160)
+            .background(Color.black.opacity(0.85))
+            .foregroundStyle(.green)
+            .clipShape(RoundedRectangle(cornerRadius: 4))
+            .onChange(of: bridge.navDelegate.diagnosticLog.count) { _, count in
+                if count > 0 {
+                    withAnimation { proxy.scrollTo(count - 1, anchor: .bottom) }
+                }
+            }
+        }
     }
 
     private var connectButtonLabel: String {

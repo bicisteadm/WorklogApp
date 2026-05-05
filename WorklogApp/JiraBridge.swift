@@ -84,41 +84,78 @@ final class JiraBridge: ObservableObject {
     }
 
     /// One-shot validation: hit `/rest/api/2/myself` from the current page context
-    /// and translate the result into `state`.
+    /// and translate the result into `state`. Verbose logging to diagnose why an
+    /// otherwise-successful login flow doesn't flip us to `.connected`.
     func validate() async {
         guard let baseURL = settings.baseURL else {
             state = .error("Set Jira URL in Settings")
             return
         }
         state = .checking
+        navDelegate.log("validate: webView at \(webView.url?.absoluteString ?? "about:blank")")
 
-        let endpoint = baseURL.appendingPathComponent("rest/api/2/myself").absoluteString
+        // Use a relative URL so we always hit the *origin we're on*, regardless of
+        // any host redirects the SSO chain performed. Send X-Atlassian-Token to
+        // bypass CSRF guard (harmless on GET; required by some DC configs).
         let js = """
         (async () => {
+          const cookieCount = (document.cookie || '').split(';').filter(Boolean).length;
           try {
-            const r = await fetch(\(jsString(endpoint)), {
+            const r = await fetch('/rest/api/2/myself', {
               credentials: 'include',
-              headers: { 'Accept': 'application/json' }
+              redirect: 'follow',
+              headers: {
+                'Accept': 'application/json',
+                'X-Atlassian-Token': 'no-check',
+                'X-Requested-With': 'XMLHttpRequest'
+              }
             });
             const text = await r.text();
-            return { status: r.status, body: text, finalURL: r.url };
+            return {
+              status: r.status,
+              finalURL: r.url,
+              contentType: (r.headers.get('content-type') || ''),
+              bodyPreview: text.substring(0, 240),
+              fullBody: text,
+              location: location.href,
+              cookieCount: cookieCount
+            };
           } catch (e) {
-            return { status: 0, error: String(e) };
+            return { status: 0, error: String(e), location: location.href, cookieCount: cookieCount };
           }
         })()
         """
 
         do {
             let result = try await webView.evaluateJavaScript(js)
-            guard let dict = result as? [String: Any], let status = dict["status"] as? Int else {
+            guard let dict = result as? [String: Any] else {
+                navDelegate.log("validate: empty JS result")
                 state = .disconnected
                 return
             }
 
-            // Login redirects through F5/SSO often return 200 with a login page,
-            // not 401, so also check the body.
+            let status = (dict["status"] as? Int) ?? 0
+            let location = (dict["location"] as? String) ?? "?"
+            let cookieCount = (dict["cookieCount"] as? Int) ?? 0
+
+            if status == 0 {
+                let err = (dict["error"] as? String) ?? "unknown"
+                navDelegate.log("validate: fetch error: \(err) (cookies=\(cookieCount), at=\(location))")
+                state = .disconnected
+                return
+            }
+
+            let finalURL = (dict["finalURL"] as? String) ?? "?"
+            let ctype = (dict["contentType"] as? String) ?? ""
+            let preview = (dict["bodyPreview"] as? String) ?? ""
+            navDelegate.log("validate: \(status) → \(finalURL) ct=\(ctype) cookies=\(cookieCount)")
+            if !preview.isEmpty {
+                navDelegate.log("body: \(preview.replacingOccurrences(of: "\n", with: " ").prefix(180))")
+            }
+
             if status == 200,
-               let body = dict["body"] as? String,
+               ctype.contains("application/json"),
+               let body = dict["fullBody"] as? String,
                let data = body.data(using: .utf8),
                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                 let name = (json["displayName"] as? String)
@@ -130,7 +167,7 @@ final class JiraBridge: ObservableObject {
                 state = .disconnected
             }
         } catch {
-            // Cross-origin redirect during SSO / page not yet loaded → treat as not yet.
+            navDelegate.log("validate: JS exception: \(error.localizedDescription)")
             state = .disconnected
         }
     }
@@ -218,7 +255,7 @@ final class MTLSNavigationDelegate: NSObject, WKNavigationDelegate, ObservableOb
     /// Cumulative diagnostic log — newest line last, capped at ~200 entries.
     @Published private(set) var diagnosticLog: [String] = []
 
-    private func log(_ message: String) {
+    func log(_ message: String) {
         let line = "[\(Self.timestamp())] \(message)"
         DispatchQueue.main.async {
             self.lastEvent = message
