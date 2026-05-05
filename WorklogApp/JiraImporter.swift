@@ -1,6 +1,73 @@
 import Foundation
 import SwiftData
 
+// MARK: - Text helpers
+
+/// Some Jira Data Center instances render `description` to HTML server-side
+/// instead of returning raw wiki markup. Convert to plain text with sane
+/// line breaks so the rest of the app (which displays descriptions as plain
+/// text) doesn't end up showing literal `<p dir="auto">…</p>` blocks.
+enum JiraText {
+    static func plainText(from raw: String?) -> String {
+        guard var s = raw, !s.isEmpty else { return "" }
+
+        // Block-level → newlines, in order from longest match to shortest.
+        let replacements: [(String, String)] = [
+            ("<br/>", "\n"), ("<br />", "\n"), ("<br>", "\n"),
+            ("</p>", "\n\n"), ("</div>", "\n\n"),
+            ("</li>", "\n"), ("<li>", "  • "),
+            ("</tr>", "\n"), ("</td>", "\t")
+        ]
+        for (from, to) in replacements {
+            s = s.replacingOccurrences(of: from, with: to, options: .caseInsensitive)
+        }
+
+        // Strip remaining tags.
+        s = s.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+
+        // Decode the most common HTML entities. Numeric entities done generically.
+        let entities: [(String, String)] = [
+            ("&nbsp;", " "), ("&amp;", "&"), ("&lt;", "<"), ("&gt;", ">"),
+            ("&quot;", "\""), ("&apos;", "'"), ("&#39;", "'"),
+            ("&hellip;", "…"), ("&mdash;", "—"), ("&ndash;", "–"),
+            ("&laquo;", "«"), ("&raquo;", "»"), ("&copy;", "©"), ("&reg;", "®")
+        ]
+        for (from, to) in entities {
+            s = s.replacingOccurrences(of: from, with: to)
+        }
+        // Numeric: &#1234; and &#x1F600;
+        s = decodeNumericEntities(s)
+
+        // Collapse runs of blank lines and trim.
+        s = s.replacingOccurrences(of: "\n{3,}", with: "\n\n", options: .regularExpression)
+        s = s.replacingOccurrences(of: "[ \\t]+\n", with: "\n", options: .regularExpression)
+        return s.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func decodeNumericEntities(_ s: String) -> String {
+        var result = s
+        let pattern = #"&#(x?[0-9A-Fa-f]+);"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return s }
+        let nsString = result as NSString
+        let matches = regex.matches(in: result, range: NSRange(location: 0, length: nsString.length))
+        // Walk in reverse so ranges remain valid as we substitute.
+        for m in matches.reversed() {
+            guard m.numberOfRanges >= 2 else { continue }
+            let token = nsString.substring(with: m.range(at: 1))
+            let scalarValue: UInt32?
+            if token.hasPrefix("x") || token.hasPrefix("X") {
+                scalarValue = UInt32(token.dropFirst(), radix: 16)
+            } else {
+                scalarValue = UInt32(token, radix: 10)
+            }
+            guard let value = scalarValue, let scalar = Unicode.Scalar(value) else { continue }
+            let replacement = String(scalar)
+            result = (result as NSString).replacingCharacters(in: m.range, with: replacement)
+        }
+        return result
+    }
+}
+
 // MARK: - Jira REST DTOs
 
 /// Minimal subset of `/rest/api/2/search` response we care about.
@@ -344,8 +411,8 @@ final class JiraImporter: ObservableObject {
             }
 
             // Ticket upsert (match by Jira issue key — that's what we put in ticketId).
-            let summary_ = issue.fields.summary ?? "(no summary)"
-            let detail = issue.fields.description ?? ""
+            let summary_ = JiraText.plainText(from: issue.fields.summary)
+            let detail = JiraText.plainText(from: issue.fields.description)
             let dueDate: Date? = parseISODateOnly(issue.fields.duedate)
 
             if let existing = projectTickets.first(where: { $0.ticketId == issue.key }) {

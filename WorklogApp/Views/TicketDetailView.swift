@@ -726,8 +726,9 @@ struct TicketDetailView: View {
 
         do {
             let issue = try await bridge.getJSON(path, as: JiraIssue.self)
-            ticket.name = issue.fields.summary ?? ticket.name
-            ticket.detail = issue.fields.description ?? ""
+            let cleanSummary = JiraText.plainText(from: issue.fields.summary)
+            ticket.name = cleanSummary.isEmpty ? ticket.name : cleanSummary
+            ticket.detail = JiraText.plainText(from: issue.fields.description)
             if let due = issue.fields.duedate, let parsed = parseISODate(due) {
                 ticket.dueDate = parsed
             } else if issue.fields.duedate == nil {
