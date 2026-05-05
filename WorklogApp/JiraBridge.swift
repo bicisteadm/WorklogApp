@@ -267,6 +267,18 @@ final class MTLSNavigationDelegate: NSObject, WKNavigationDelegate, ObservableOb
         }
     }
 
+    /// Plain-text snapshot of the full diagnostic log, for clipboard / sharing.
+    @MainActor
+    func diagnosticLogText() -> String {
+        diagnosticLog.joined(separator: "\n")
+    }
+
+    @MainActor
+    func clearDiagnosticLog() {
+        diagnosticLog.removeAll()
+        lastEvent = "Idle"
+    }
+
     private static let timestampFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "HH:mm:ss"

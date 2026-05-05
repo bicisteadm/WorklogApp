@@ -37,27 +37,34 @@ struct JiraLoginWindowContent: View {
 
             if showDiagnostics {
                 Divider()
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 1) {
-                            ForEach(Array(bridge.navDelegate.diagnosticLog.enumerated()), id: \.offset) { idx, line in
-                                Text(line)
-                                    .font(.system(.caption2, design: .monospaced))
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .textSelection(.enabled)
-                                    .id(idx)
-                            }
+                VStack(alignment: .leading, spacing: 4) {
+                    LoginDiagnosticEditor(text: bridge.navDelegate.diagnosticLog.joined(separator: "\n"))
+                        .frame(height: 140)
+                    HStack {
+                        Button {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(bridge.navDelegate.diagnosticLogText(), forType: .string)
+                        } label: {
+                            Label("Copy log", systemImage: "doc.on.doc")
                         }
-                        .padding(8)
-                    }
-                    .frame(height: 140)
-                    .background(Color.black.opacity(0.85))
-                    .foregroundStyle(.green)
-                    .onChange(of: bridge.navDelegate.diagnosticLog.count) { _, count in
-                        if count > 0 {
-                            withAnimation { proxy.scrollTo(count - 1, anchor: .bottom) }
+                        .controlSize(.small)
+                        .disabled(bridge.navDelegate.diagnosticLog.isEmpty)
+
+                        Button {
+                            bridge.navDelegate.clearDiagnosticLog()
+                        } label: {
+                            Label("Clear", systemImage: "trash")
                         }
+                        .controlSize(.small)
+                        .disabled(bridge.navDelegate.diagnosticLog.isEmpty)
+
+                        Spacer()
+                        Text("\(bridge.navDelegate.diagnosticLog.count) line(s)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 4)
                 }
             }
 
@@ -154,4 +161,38 @@ private struct JiraWebViewRepresentable: NSViewRepresentable {
 enum WindowIDs {
     static let main = "main"
     static let jiraLogin = "jiraLogin"
+}
+
+/// Read-only NSTextView wrapper for the login window's diagnostic panel.
+/// (Same trick as in SettingsView — Cmd-A/Cmd-C works reliably here.)
+private struct LoginDiagnosticEditor: NSViewRepresentable {
+    let text: String
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let scroll = NSTextView.scrollableTextView()
+        scroll.borderType = .noBorder
+        scroll.hasVerticalScroller = true
+        scroll.autohidesScrollers = false
+
+        if let textView = scroll.documentView as? NSTextView {
+            textView.isEditable = false
+            textView.isSelectable = true
+            textView.isRichText = false
+            textView.font = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
+            textView.textColor = .systemGreen
+            textView.backgroundColor = NSColor.black.withAlphaComponent(0.9)
+            textView.drawsBackground = true
+            textView.usesFontPanel = false
+            textView.string = text
+        }
+        return scroll
+    }
+
+    func updateNSView(_ scroll: NSScrollView, context: Context) {
+        guard let textView = scroll.documentView as? NSTextView else { return }
+        if textView.string != text {
+            textView.string = text
+            textView.scrollToEndOfDocument(nil)
+        }
+    }
 }

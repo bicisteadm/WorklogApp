@@ -97,27 +97,36 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var diagnosticPanel: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 1) {
-                    ForEach(Array(bridge.navDelegate.diagnosticLog.enumerated()), id: \.offset) { idx, line in
-                        Text(line)
-                            .font(.system(.caption2, design: .monospaced))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .textSelection(.enabled)
-                            .id(idx)
-                    }
-                }
-                .padding(8)
-            }
+        VStack(alignment: .leading, spacing: 6) {
+            DiagnosticLogEditor(
+                text: bridge.navDelegate.diagnosticLog.joined(separator: "\n")
+            )
             .frame(height: 160)
-            .background(Color.black.opacity(0.85))
-            .foregroundStyle(.green)
-            .clipShape(RoundedRectangle(cornerRadius: 4))
-            .onChange(of: bridge.navDelegate.diagnosticLog.count) { _, count in
-                if count > 0 {
-                    withAnimation { proxy.scrollTo(count - 1, anchor: .bottom) }
+
+            HStack {
+                Button {
+                    let text = bridge.navDelegate.diagnosticLogText()
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(text, forType: .string)
+                } label: {
+                    Label("Copy log", systemImage: "doc.on.doc")
                 }
+                .controlSize(.small)
+                .disabled(bridge.navDelegate.diagnosticLog.isEmpty)
+
+                Button {
+                    bridge.navDelegate.clearDiagnosticLog()
+                } label: {
+                    Label("Clear", systemImage: "trash")
+                }
+                .controlSize(.small)
+                .disabled(bridge.navDelegate.diagnosticLog.isEmpty)
+
+                Spacer()
+
+                Text("\(bridge.navDelegate.diagnosticLog.count) line(s)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -162,4 +171,43 @@ struct SettingsView: View {
         f.unitsStyle = .full
         return f
     }()
+}
+
+/// Read-only NSTextView wrapper. `Text` + `.textSelection(.enabled)` works
+/// erratically inside Form / ScrollView, so we drop to AppKit for a reliable
+/// Cmd-A / Cmd-C experience and auto-scroll-to-bottom.
+private struct DiagnosticLogEditor: NSViewRepresentable {
+    let text: String
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let scroll = NSTextView.scrollableTextView()
+        scroll.borderType = .lineBorder
+        scroll.hasVerticalScroller = true
+        scroll.autohidesScrollers = false
+
+        if let textView = scroll.documentView as? NSTextView {
+            textView.isEditable = false
+            textView.isSelectable = true
+            textView.isRichText = false
+            textView.font = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
+            textView.textColor = .systemGreen
+            textView.backgroundColor = NSColor.black.withAlphaComponent(0.9)
+            textView.drawsBackground = true
+            textView.usesFontPanel = false
+            textView.isAutomaticQuoteSubstitutionEnabled = false
+            textView.isAutomaticDashSubstitutionEnabled = false
+            textView.isAutomaticTextReplacementEnabled = false
+            textView.isAutomaticSpellingCorrectionEnabled = false
+            textView.string = text
+        }
+        return scroll
+    }
+
+    func updateNSView(_ scroll: NSScrollView, context: Context) {
+        guard let textView = scroll.documentView as? NSTextView else { return }
+        if textView.string != text {
+            textView.string = text
+            textView.scrollToEndOfDocument(nil)
+        }
+    }
 }
