@@ -126,6 +126,12 @@ struct SidebarView: View {
                 }
             }
 
+            ToolbarItem(placement: .automatic) {
+                SettingsLink {
+                    Label("Settings", systemImage: "gear")
+                }
+            }
+
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     presentedSheet = .newProject

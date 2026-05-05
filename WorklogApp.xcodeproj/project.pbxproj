@@ -25,6 +25,10 @@
 		CC00000B2F10000100000007 /* IterationSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00000A2F10000100000007 /* IterationSheets.swift */; };
 		CC00000B2F10000100000008 /* EditTimeEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00000A2F10000100000008 /* EditTimeEntryView.swift */; };
 		CC00000B2F10000100000009 /* ReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00000A2F10000100000009 /* ReportsView.swift */; };
+		CC10000B2F11000100000001 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC10000A2F11000100000001 /* AppSettings.swift */; };
+		CC10000B2F11000100000002 /* JiraBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC10000A2F11000100000002 /* JiraBridge.swift */; };
+		CC10000B2F11000100000003 /* JiraLoginWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC10000A2F11000100000003 /* JiraLoginWindow.swift */; };
+		CC10000B2F11000100000004 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC10000A2F11000100000004 /* SettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -67,6 +71,10 @@
 		CC00000A2F10000100000007 /* IterationSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IterationSheets.swift; sourceTree = "<group>"; };
 		CC00000A2F10000100000008 /* EditTimeEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditTimeEntryView.swift; sourceTree = "<group>"; };
 		CC00000A2F10000100000009 /* ReportsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportsView.swift; sourceTree = "<group>"; };
+		CC10000A2F11000100000001 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
+		CC10000A2F11000100000002 /* JiraBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JiraBridge.swift; sourceTree = "<group>"; };
+		CC10000A2F11000100000003 /* JiraLoginWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JiraLoginWindow.swift; sourceTree = "<group>"; };
+		CC10000A2F11000100000004 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -125,6 +133,9 @@
 				66F0B6672F0EA1AF001A90C7 /* Info.plist */,
 				66F0B6652F0EA1A4001A90C7 /* StatusBarMenuView.swift */,
 				66F0B6632F0E99AB001A90C7 /* TimerState.swift */,
+				CC10000A2F11000100000001 /* AppSettings.swift */,
+				CC10000A2F11000100000002 /* JiraBridge.swift */,
+				CC10000A2F11000100000003 /* JiraLoginWindow.swift */,
 				1F1F8B0C2D8F0001007D0001 /* WorklogAppApp.swift */,
 				1F1F8B0D2D8F0001007D0001 /* ContentView.swift */,
 				CC00000C2F10000100000001 /* Views */,
@@ -146,6 +157,7 @@
 				CC00000A2F10000100000007 /* IterationSheets.swift */,
 				CC00000A2F10000100000008 /* EditTimeEntryView.swift */,
 				CC00000A2F10000100000009 /* ReportsView.swift */,
+				CC10000A2F11000100000004 /* SettingsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -315,6 +327,10 @@
 				CC00000B2F10000100000006 /* TicketSheets.swift in Sources */,
 				CC00000B2F10000100000007 /* IterationSheets.swift in Sources */,
 				CC00000B2F10000100000008 /* EditTimeEntryView.swift in Sources */,
+				CC10000B2F11000100000001 /* AppSettings.swift in Sources */,
+				CC10000B2F11000100000002 /* JiraBridge.swift in Sources */,
+				CC10000B2F11000100000003 /* JiraLoginWindow.swift in Sources */,
+				CC10000B2F11000100000004 /* SettingsView.swift in Sources */,
 				CC00000B2F10000100000009 /* ReportsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

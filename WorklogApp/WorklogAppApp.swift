@@ -20,6 +20,8 @@ struct WorklogAppApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     let modelContainer: ModelContainer
     @StateObject private var timerState = TimerState()
+    @StateObject private var settings = AppSettings()
+    @StateObject private var jiraBridge: JiraBridge
 
     init() {
         do {
@@ -30,6 +32,13 @@ struct WorklogAppApp: App {
         } catch {
             fatalError("Failed to initialize ModelContainer: \(error)")
         }
+
+        // settings + jiraBridge wiring: bridge needs the same settings instance
+        // that the rest of the app reads. We can't use @StateObject in init, so
+        // we build them once and wrap in StateObject manually.
+        let settings = AppSettings()
+        _settings = StateObject(wrappedValue: settings)
+        _jiraBridge = StateObject(wrappedValue: JiraBridge(settings: settings))
     }
 
     var body: some Scene {
@@ -41,10 +50,12 @@ struct WorklogAppApp: App {
         .menuBarExtraStyle(.menu)
         .modelContainer(modelContainer)
 
-        WindowGroup(id: "main") {
+        WindowGroup(id: WindowIDs.main) {
             ContentView(timerState: timerState)
                 .frame(minWidth: 800, minHeight: 600)
                 .background(WindowConfigurator())
+                .environmentObject(settings)
+                .environmentObject(jiraBridge)
         }
         .modelContainer(modelContainer)
         .commands {
@@ -54,6 +65,20 @@ struct WorklogAppApp: App {
                 }
             }
         }
+
+        Settings {
+            SettingsView()
+                .environmentObject(settings)
+                .environmentObject(jiraBridge)
+        }
+
+        Window("Connect to Jira", id: WindowIDs.jiraLogin) {
+            JiraLoginWindowContent()
+                .environmentObject(settings)
+                .environmentObject(jiraBridge)
+        }
+        .windowResizability(.contentSize)
+        .defaultSize(width: 1100, height: 720)
     }
 }
 
