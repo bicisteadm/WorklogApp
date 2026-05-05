@@ -8,16 +8,17 @@ import AppKit
 /// Bridges the app to Jira **without using the public REST API** that the company
 /// has disabled. Instead it embeds a single `WKWebView` whose `WKWebsiteDataStore`
 /// carries the user's authenticated session cookies (F5 / SSO / Jira). API calls
-/// are made by `evaluateJavaScript` running `fetch()` *inside the page context*,
+/// are made by `callAsyncJavaScript` running `fetch()` *inside the page context*,
 /// so F5 sees a normal authenticated browser request.
 ///
-/// Lifecycle:
-///   1. `prepareForUse()` loads the Jira homepage so a document context exists.
-///   2. `validate()` runs `fetch('/rest/api/2/myself')` and updates `state`.
-///   3. While disconnected during a login flow, `pollUntilConnected()` retries
-///      every few seconds so the UI flips to "connected" automatically when
-///      the user finishes signing in.
-///   4. A 5-min watchdog re-validates in the background after first success.
+/// **Strictly on-demand** — there is no background watchdog or periodic ping.
+/// `validate()` runs only when:
+///   - the user clicks "Test" in Settings,
+///   - the login window is open and we're polling for the user to finish sign-in,
+///   - we're about to perform a real API operation (caller's responsibility).
+///
+/// This keeps our request profile minimal: the server only sees calls that
+/// match a real user action.
 @MainActor
 final class JiraBridge: ObservableObject {
     enum ConnectionState: Equatable {
@@ -38,7 +39,6 @@ final class JiraBridge: ObservableObject {
     private let settings: AppSettings
     private var cancellables = Set<AnyCancellable>()
     private var pollTask: Task<Void, Never>?
-    private var watchdogTimer: Timer?
 
     /// Retained navigation delegate that handles client-cert (mTLS) auth challenges
     /// and accumulates diagnostic events. Surface this in the login window so the
@@ -171,7 +171,6 @@ final class JiraBridge: ObservableObject {
                     ?? (json["name"] as? String)
                     ?? "Jira user"
                 state = .connected(displayName: name, lastChecked: Date())
-                startWatchdog()
             } else {
                 state = .disconnected
             }
@@ -207,8 +206,6 @@ final class JiraBridge: ObservableObject {
     /// Wipe cookies + cache so the next login flow starts from a clean slate.
     func disconnect() async {
         cancelPolling()
-        watchdogTimer?.invalidate()
-        watchdogTimer = nil
 
         let store = webView.configuration.websiteDataStore
         let types = WKWebsiteDataStore.allWebsiteDataTypes()
@@ -226,14 +223,6 @@ final class JiraBridge: ObservableObject {
         await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
             navDelegate.onceOnNextNavigationFinish { cont.resume() }
             webView.load(request)
-        }
-    }
-
-    private func startWatchdog() {
-        guard watchdogTimer == nil else { return }
-        // Re-check session every 5 minutes once we've been connected at least once.
-        watchdogTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in await self?.validate() }
         }
     }
 
