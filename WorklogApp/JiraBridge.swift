@@ -84,8 +84,12 @@ final class JiraBridge: ObservableObject {
     }
 
     /// One-shot validation: hit `/rest/api/2/myself` from the current page context
-    /// and translate the result into `state`. Verbose logging to diagnose why an
-    /// otherwise-successful login flow doesn't flip us to `.connected`.
+    /// and translate the result into `state`. Uses `callAsyncJavaScript` instead
+    /// of `evaluateJavaScript` because the async overload of the latter trips on
+    /// "unsupported type" when the resolved Promise contains certain values
+    /// (null/undefined inside an object). `callAsyncJavaScript` is designed
+    /// specifically for async function bodies returning Promises and bridges
+    /// the result cleanly.
     func validate() async {
         guard let baseURL = settings.baseURL else {
             state = .error("Set Jira URL in Settings")
@@ -94,57 +98,62 @@ final class JiraBridge: ObservableObject {
         state = .checking
         navDelegate.log("validate: webView at \(webView.url?.absoluteString ?? "about:blank")")
 
-        // Use a relative URL so we always hit the *origin we're on*, regardless of
-        // any host redirects the SSO chain performed. Send X-Atlassian-Token to
-        // bypass CSRF guard (harmless on GET; required by some DC configs).
-        let js = """
-        (async () => {
-          const cookieCount = (document.cookie || '').split(';').filter(Boolean).length;
-          try {
-            const r = await fetch('/rest/api/2/myself', {
-              credentials: 'include',
-              redirect: 'follow',
-              headers: {
-                'Accept': 'application/json',
-                'X-Atlassian-Token': 'no-check',
-                'X-Requested-With': 'XMLHttpRequest'
-              }
-            });
-            const text = await r.text();
-            return {
-              status: r.status,
-              finalURL: r.url,
-              contentType: (r.headers.get('content-type') || ''),
-              bodyPreview: text.substring(0, 240),
-              fullBody: text,
-              location: location.href,
-              cookieCount: cookieCount
-            };
-          } catch (e) {
-            return { status: 0, error: String(e), location: location.href, cookieCount: cookieCount };
-          }
-        })()
+        // Function body for callAsyncJavaScript — note: NO IIFE wrapper; just
+        // statements and `return` directly. The runtime treats this as an async
+        // function body.
+        let body = """
+        const cookieCount = (document.cookie || '').split(';').filter(Boolean).length;
+        try {
+          const r = await fetch('/rest/api/2/myself', {
+            credentials: 'include',
+            redirect: 'follow',
+            headers: {
+              'Accept': 'application/json',
+              'X-Atlassian-Token': 'no-check',
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+          const text = await r.text();
+          return {
+            ok: true,
+            status: r.status,
+            finalURL: String(r.url || ''),
+            contentType: String(r.headers.get('content-type') || ''),
+            bodyPreview: text.substring(0, 240),
+            fullBody: text,
+            location: String(location.href || ''),
+            cookieCount: cookieCount
+          };
+        } catch (e) {
+          return {
+            ok: false,
+            error: String(e && e.message || e),
+            location: String(location.href || ''),
+            cookieCount: cookieCount
+          };
+        }
         """
 
         do {
-            let result = try await webView.evaluateJavaScript(js)
-            guard let dict = result as? [String: Any] else {
-                navDelegate.log("validate: empty JS result")
+            let raw = try await webView.callAsyncJavaScript(body, arguments: [:], in: nil, contentWorld: .page)
+            guard let dict = raw as? [String: Any] else {
+                navDelegate.log("validate: callAsyncJS returned \(String(describing: type(of: raw)))")
                 state = .disconnected
                 return
             }
 
-            let status = (dict["status"] as? Int) ?? 0
             let location = (dict["location"] as? String) ?? "?"
             let cookieCount = (dict["cookieCount"] as? Int) ?? 0
+            let ok = (dict["ok"] as? Bool) ?? false
 
-            if status == 0 {
+            if !ok {
                 let err = (dict["error"] as? String) ?? "unknown"
                 navDelegate.log("validate: fetch error: \(err) (cookies=\(cookieCount), at=\(location))")
                 state = .disconnected
                 return
             }
 
+            let status = (dict["status"] as? Int) ?? 0
             let finalURL = (dict["finalURL"] as? String) ?? "?"
             let ctype = (dict["contentType"] as? String) ?? ""
             let preview = (dict["bodyPreview"] as? String) ?? ""
