@@ -1,6 +1,9 @@
 import Foundation
 import WebKit
 import Combine
+import Security
+import SecurityInterface
+import AppKit
 
 /// Bridges the app to Jira **without using the public REST API** that the company
 /// has disabled. Instead it embeds a single `WKWebView` whose `WKWebsiteDataStore`
@@ -37,6 +40,11 @@ final class JiraBridge: ObservableObject {
     private var pollTask: Task<Void, Never>?
     private var watchdogTimer: Timer?
 
+    /// Retained navigation delegate that handles client-cert (mTLS) auth challenges.
+    /// Without it, WKWebView ignores user identities in the system Keychain and the
+    /// Jira / F5 mTLS handshake silently fails.
+    private let navDelegate = MTLSNavigationDelegate()
+
     init(settings: AppSettings) {
         self.settings = settings
 
@@ -44,6 +52,7 @@ final class JiraBridge: ObservableObject {
         config.websiteDataStore = .default()  // persists cookies across launches
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.allowsBackForwardNavigationGestures = false
+        webView.navigationDelegate = navDelegate
         self.webView = webView
 
         // Re-validate whenever the user changes the Jira URL.
@@ -169,10 +178,7 @@ final class JiraBridge: ObservableObject {
 
     private func load(_ request: URLRequest) async {
         await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
-            let observer = NavigationObserver { cont.resume() }
-            webView.navigationDelegate = observer
-            // Retain observer until callback fires.
-            objc_setAssociatedObject(webView, &Self.navObserverKey, observer, .OBJC_ASSOCIATION_RETAIN)
+            navDelegate.onceOnNextNavigationFinish { cont.resume() }
             webView.load(request)
         }
     }
@@ -185,39 +191,118 @@ final class JiraBridge: ObservableObject {
         }
     }
 
-    private static var navObserverKey: UInt8 = 0
 }
 
-// MARK: - Navigation observer
+// MARK: - Navigation delegate
 
-/// Calls back exactly once when the next navigation either finishes or fails,
-/// so we can `await` a `webView.load()` cleanly. We don't keep the delegate
-/// installed past that — JavaScript-driven page loads (login redirects) are
-/// driven by the user's interaction in the login window, not by us.
-private final class NavigationObserver: NSObject, WKNavigationDelegate {
-    private var didFire = false
-    private let onFinish: () -> Void
+/// Permanent navigation delegate for the bridge's WebView. Handles two things:
+///
+///   1. **Client-certificate (mTLS) auth challenges** — by default WKWebView
+///      ignores user identities in the system Keychain. We respond by enumerating
+///      identities relevant to the protection space and either picking the only
+///      match automatically or showing a native picker (`SFChooseIdentityPanel`).
+///
+///   2. **One-shot navigation-finished callback** — used by `JiraBridge.load(_:)`
+///      to `await` a single page load without thrashing the delegate slot.
+final class MTLSNavigationDelegate: NSObject, WKNavigationDelegate {
+    private var pendingFinishCallback: (() -> Void)?
 
-    init(onFinish: @escaping () -> Void) {
-        self.onFinish = onFinish
+    @MainActor
+    func onceOnNextNavigationFinish(_ block: @escaping () -> Void) {
+        // Replace any prior pending callback — the new awaiter wins.
+        pendingFinishCallback = block
     }
 
+    // MARK: Auth challenges (mTLS)
+
+    func webView(_ webView: WKWebView,
+                 didReceive challenge: URLAuthenticationChallenge,
+                 completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        let space = challenge.protectionSpace
+        switch space.authenticationMethod {
+        case NSURLAuthenticationMethodClientCertificate:
+            handleClientCertChallenge(host: space.host,
+                                      acceptableIssuers: space.distinguishedNames,
+                                      completionHandler: completionHandler)
+        default:
+            // Server cert (kSecTrust), HTTP basic, NTLM, etc. — let the system handle it.
+            completionHandler(.performDefaultHandling, nil)
+        }
+    }
+
+    private func handleClientCertChallenge(
+        host: String,
+        acceptableIssuers: [Data]?,
+        completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
+    ) {
+        let identities = Self.findClientIdentities()
+        guard !identities.isEmpty else {
+            // No certs found — fall back to default (server may not actually require client cert).
+            completionHandler(.performDefaultHandling, nil)
+            return
+        }
+
+        // Single identity — use it directly. Multiple — show picker.
+        if identities.count == 1 {
+            let credential = URLCredential(identity: identities[0], certificates: nil, persistence: .forSession)
+            completionHandler(.useCredential, credential)
+            return
+        }
+
+        DispatchQueue.main.async {
+            guard let panel = SFChooseIdentityPanel.shared() else {
+                completionHandler(.performDefaultHandling, nil)
+                return
+            }
+            panel.setAlternateButtonTitle("Cancel")
+            let result = panel.runModal(
+                forIdentities: identities,
+                message: "Choose a certificate to authenticate to \(host)"
+            )
+            if result == NSApplication.ModalResponse.OK.rawValue,
+               let chosen = panel.identity()?.takeUnretainedValue() {
+                let credential = URLCredential(identity: chosen, certificates: nil, persistence: .forSession)
+                completionHandler(.useCredential, credential)
+            } else {
+                completionHandler(.cancelAuthenticationChallenge, nil)
+            }
+        }
+    }
+
+    /// Pull every `SecIdentity` (= cert + private key pair) the user has installed
+    /// in their default Keychain. F5 will request a specific issuer in
+    /// `acceptableIssuers`; we still hand the full list to the picker so the user
+    /// can pick anything if their cert isn't auto-matched.
+    private static func findClientIdentities() -> [SecIdentity] {
+        let query: [CFString: Any] = [
+            kSecClass: kSecClassIdentity,
+            kSecMatchLimit: kSecMatchLimitAll,
+            kSecReturnRef: true
+        ]
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        guard status == errSecSuccess else { return [] }
+        return (result as? [SecIdentity]) ?? []
+    }
+
+    // MARK: Navigation lifecycle
+
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        fireOnce()
+        firePendingCallback()
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        fireOnce()
+        firePendingCallback()
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        fireOnce()
+        firePendingCallback()
     }
 
-    private func fireOnce() {
-        guard !didFire else { return }
-        didFire = true
-        onFinish()
+    private func firePendingCallback() {
+        guard let block = pendingFinishCallback else { return }
+        pendingFinishCallback = nil
+        block()
     }
 }
 
