@@ -8,11 +8,58 @@ import WebKit
 struct JiraLoginWindowContent: View {
     @EnvironmentObject var bridge: JiraBridge
     @Environment(\.dismissWindow) private var dismissWindow
+    @State private var showDiagnostics = false
 
     var body: some View {
         VStack(spacing: 0) {
             JiraWebViewRepresentable(webView: bridge.webView)
-                .frame(minWidth: 900, idealWidth: 1100, minHeight: 600, idealHeight: 700)
+                .frame(minWidth: 900, idealWidth: 1100, minHeight: 500, idealHeight: 600)
+
+            Divider()
+
+            // Live diagnostic line — most recent navigation/auth event
+            HStack(spacing: 8) {
+                Image(systemName: "info.circle")
+                    .foregroundStyle(.secondary)
+                Text(bridge.navDelegate.lastEvent)
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Spacer()
+                Toggle("Diagnostics", isOn: $showDiagnostics)
+                    .toggleStyle(.switch)
+                    .controlSize(.mini)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color(nsColor: .controlBackgroundColor))
+
+            if showDiagnostics {
+                Divider()
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 1) {
+                            ForEach(Array(bridge.navDelegate.diagnosticLog.enumerated()), id: \.offset) { idx, line in
+                                Text(line)
+                                    .font(.system(.caption2, design: .monospaced))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .textSelection(.enabled)
+                                    .id(idx)
+                            }
+                        }
+                        .padding(8)
+                    }
+                    .frame(height: 140)
+                    .background(Color.black.opacity(0.85))
+                    .foregroundStyle(.green)
+                    .onChange(of: bridge.navDelegate.diagnosticLog.count) { _, count in
+                        if count > 0 {
+                            withAnimation { proxy.scrollTo(count - 1, anchor: .bottom) }
+                        }
+                    }
+                }
+            }
 
             Divider()
 

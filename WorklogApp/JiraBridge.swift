@@ -40,10 +40,10 @@ final class JiraBridge: ObservableObject {
     private var pollTask: Task<Void, Never>?
     private var watchdogTimer: Timer?
 
-    /// Retained navigation delegate that handles client-cert (mTLS) auth challenges.
-    /// Without it, WKWebView ignores user identities in the system Keychain and the
-    /// Jira / F5 mTLS handshake silently fails.
-    private let navDelegate = MTLSNavigationDelegate()
+    /// Retained navigation delegate that handles client-cert (mTLS) auth challenges
+    /// and accumulates diagnostic events. Surface this in the login window so the
+    /// user can see exactly what's happening when something silently fails.
+    let navDelegate = MTLSNavigationDelegate()
 
     init(settings: AppSettings) {
         self.settings = settings
@@ -195,7 +195,7 @@ final class JiraBridge: ObservableObject {
 
 // MARK: - Navigation delegate
 
-/// Permanent navigation delegate for the bridge's WebView. Handles two things:
+/// Permanent navigation delegate for the bridge's WebView. Handles:
 ///
 ///   1. **Client-certificate (mTLS) auth challenges** — by default WKWebView
 ///      ignores user identities in the system Keychain. We respond by enumerating
@@ -204,8 +204,40 @@ final class JiraBridge: ObservableObject {
 ///
 ///   2. **One-shot navigation-finished callback** — used by `JiraBridge.load(_:)`
 ///      to `await` a single page load without thrashing the delegate slot.
-final class MTLSNavigationDelegate: NSObject, WKNavigationDelegate {
+///
+///   3. **Diagnostics** — every navigation lifecycle event and every auth
+///      challenge is appended to `diagnosticLog` and observable via
+///      `lastEvent`, surfaced in the login window status bar.
+final class MTLSNavigationDelegate: NSObject, WKNavigationDelegate, ObservableObject {
     private var pendingFinishCallback: (() -> Void)?
+
+    /// Most recent human-readable diagnostic line (current URL, error, auth
+    /// challenge, etc.). Updated on the main thread.
+    @Published private(set) var lastEvent: String = "Idle"
+
+    /// Cumulative diagnostic log — newest line last, capped at ~200 entries.
+    @Published private(set) var diagnosticLog: [String] = []
+
+    private func log(_ message: String) {
+        let line = "[\(Self.timestamp())] \(message)"
+        DispatchQueue.main.async {
+            self.lastEvent = message
+            self.diagnosticLog.append(line)
+            if self.diagnosticLog.count > 200 {
+                self.diagnosticLog.removeFirst(self.diagnosticLog.count - 200)
+            }
+            print("JiraBridge: \(line)") // also visible in Console.app via stderr
+        }
+    }
+
+    private static let timestampFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss"
+        return f
+    }()
+    private static func timestamp() -> String {
+        timestampFormatter.string(from: Date())
+    }
 
     @MainActor
     func onceOnNextNavigationFinish(_ block: @escaping () -> Void) {
@@ -219,6 +251,7 @@ final class MTLSNavigationDelegate: NSObject, WKNavigationDelegate {
                  didReceive challenge: URLAuthenticationChallenge,
                  completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         let space = challenge.protectionSpace
+        log("auth challenge: \(space.authenticationMethod) @ \(space.host):\(space.port)")
         switch space.authenticationMethod {
         case NSURLAuthenticationMethodClientCertificate:
             handleClientCertChallenge(host: space.host,
@@ -287,15 +320,30 @@ final class MTLSNavigationDelegate: NSObject, WKNavigationDelegate {
 
     // MARK: Navigation lifecycle
 
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        log("→ \(webView.url?.absoluteString ?? "?")")
+    }
+
+    func webView(_ webView: WKWebView, didReceiveServerRedirectForProvisionalNavigation navigation: WKNavigation!) {
+        log("redirect → \(webView.url?.absoluteString ?? "?")")
+    }
+
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        log("loading \(webView.url?.absoluteString ?? "?")")
+    }
+
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        log("✓ loaded \(webView.url?.absoluteString ?? "?")")
         firePendingCallback()
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        log("✗ failed: \(error.localizedDescription)")
         firePendingCallback()
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        log("✗ provisional failed: \(error.localizedDescription)")
         firePendingCallback()
     }
 
