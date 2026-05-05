@@ -3,15 +3,15 @@ import SwiftData
 
 // MARK: - Text helpers
 
-/// Some Jira Data Center instances render `description` to HTML server-side
-/// instead of returning raw wiki markup. Convert to plain text with sane
-/// line breaks so the rest of the app (which displays descriptions as plain
-/// text) doesn't end up showing literal `<p dir="auto">…</p>` blocks.
+import AppKit
+
 enum JiraText {
+    /// Strip HTML tags down to plain text. Used for fields that must be a single
+    /// line / plain (the issue summary). Description fields are kept raw and
+    /// rendered via `attributed(from:)` instead.
     static func plainText(from raw: String?) -> String {
         guard var s = raw, !s.isEmpty else { return "" }
 
-        // Block-level → newlines, in order from longest match to shortest.
         let replacements: [(String, String)] = [
             ("<br/>", "\n"), ("<br />", "\n"), ("<br>", "\n"),
             ("</p>", "\n\n"), ("</div>", "\n\n"),
@@ -21,11 +21,8 @@ enum JiraText {
         for (from, to) in replacements {
             s = s.replacingOccurrences(of: from, with: to, options: .caseInsensitive)
         }
-
-        // Strip remaining tags.
         s = s.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
 
-        // Decode the most common HTML entities. Numeric entities done generically.
         let entities: [(String, String)] = [
             ("&nbsp;", " "), ("&amp;", "&"), ("&lt;", "<"), ("&gt;", ">"),
             ("&quot;", "\""), ("&apos;", "'"), ("&#39;", "'"),
@@ -35,13 +32,64 @@ enum JiraText {
         for (from, to) in entities {
             s = s.replacingOccurrences(of: from, with: to)
         }
-        // Numeric: &#1234; and &#x1F600;
         s = decodeNumericEntities(s)
 
-        // Collapse runs of blank lines and trim.
         s = s.replacingOccurrences(of: "\n{3,}", with: "\n\n", options: .regularExpression)
         s = s.replacingOccurrences(of: "[ \\t]+\n", with: "\n", options: .regularExpression)
         return s.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Parse Jira's HTML-rendered description into an `AttributedString` for
+    /// SwiftUI display — preserves bold, italics, links, lists. Returns nil if
+    /// the input isn't HTML or parsing fails.
+    @MainActor
+    static func attributed(from raw: String?) -> AttributedString? {
+        guard let raw, !raw.isEmpty else { return nil }
+        // Quick gate: not worth invoking the HTML parser if there are clearly no tags.
+        let containsTag = raw.range(of: "<[a-zA-Z/!][^>]*>", options: .regularExpression) != nil
+        guard containsTag else { return nil }
+
+        guard let data = raw.data(using: .utf8) else { return nil }
+        let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
+            .documentType: NSAttributedString.DocumentType.html,
+            .characterEncoding: String.Encoding.utf8.rawValue
+        ]
+        guard let nsAttr = try? NSMutableAttributedString(data: data, options: options, documentAttributes: nil) else {
+            return nil
+        }
+
+        // The HTML parser injects fonts (often Times) and absolute colors (black)
+        // that look out of place. Strip them so the rendered text inherits the
+        // SwiftUI environment's font and adapts to dark mode automatically.
+        let fullRange = NSRange(location: 0, length: nsAttr.length)
+        nsAttr.removeAttribute(.foregroundColor, range: fullRange)
+        nsAttr.enumerateAttribute(.font, in: fullRange) { value, range, _ in
+            guard let font = value as? NSFont else { return }
+            // Preserve bold/italic traits, drop family + size.
+            let traits = font.fontDescriptor.symbolicTraits
+            let baseSize = NSFont.systemFontSize
+            var newFont = NSFont.systemFont(ofSize: baseSize)
+            if traits.contains(.bold) {
+                newFont = NSFont.boldSystemFont(ofSize: baseSize)
+            }
+            if traits.contains(.italic) {
+                if let italic = NSFontManager.shared.font(withFamily: newFont.familyName ?? "",
+                                                          traits: NSFontTraitMask.italicFontMask,
+                                                          weight: 5,
+                                                          size: baseSize) {
+                    newFont = italic
+                }
+            }
+            nsAttr.addAttribute(.font, value: newFont, range: range)
+        }
+        // Trim trailing whitespace/newlines that the HTML parser appends.
+        while nsAttr.length > 0,
+              let last = nsAttr.string.unicodeScalars.last,
+              CharacterSet.whitespacesAndNewlines.contains(last) {
+            nsAttr.deleteCharacters(in: NSRange(location: nsAttr.length - 1, length: 1))
+        }
+
+        return try? AttributedString(nsAttr, including: \.appKit)
     }
 
     private static func decodeNumericEntities(_ s: String) -> String {
@@ -50,7 +98,6 @@ enum JiraText {
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return s }
         let nsString = result as NSString
         let matches = regex.matches(in: result, range: NSRange(location: 0, length: nsString.length))
-        // Walk in reverse so ranges remain valid as we substitute.
         for m in matches.reversed() {
             guard m.numberOfRanges >= 2 else { continue }
             let token = nsString.substring(with: m.range(at: 1))
@@ -411,8 +458,10 @@ final class JiraImporter: ObservableObject {
             }
 
             // Ticket upsert (match by Jira issue key — that's what we put in ticketId).
+            // Summary stays plain (single-line title); description preserves
+            // raw HTML so the detail view can render it formatted.
             let summary_ = JiraText.plainText(from: issue.fields.summary)
-            let detail = JiraText.plainText(from: issue.fields.description)
+            let detail = issue.fields.description ?? ""
             let dueDate: Date? = parseISODateOnly(issue.fields.duedate)
 
             if let existing = projectTickets.first(where: { $0.ticketId == issue.key }) {

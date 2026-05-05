@@ -8,6 +8,7 @@ struct TicketDetailView: View {
     @Query private var projects: [Project]
     @ObservedObject var timerState: TimerState
     @EnvironmentObject var bridge: JiraBridge
+    @EnvironmentObject var settings: AppSettings
 
     @State private var jiraUpdateError: String?
     @State private var isUpdatingFromJira = false
@@ -174,14 +175,24 @@ struct TicketDetailView: View {
     private var viewModeContent: some View {
         VStack(alignment: .leading, spacing: 8) {
             if !ticket.ticketId.isEmpty {
-                Text(ticket.ticketId)
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(Color.accentColor.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                    .textSelection(.enabled)
+                HStack(spacing: 6) {
+                    Text(ticket.ticketId)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.accentColor.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .textSelection(.enabled)
+                    if let jiraURL = jiraIssueURL {
+                        Link(destination: jiraURL) {
+                            Label("Open in Jira", systemImage: "arrow.up.right.square")
+                                .labelStyle(.iconOnly)
+                                .font(.callout)
+                        }
+                        .help("Open \(ticket.ticketId) in Jira")
+                    }
+                }
             }
 
             Text(ticket.name)
@@ -199,12 +210,36 @@ struct TicketDetailView: View {
             }
 
             if !ticket.detail.isEmpty {
-                Text(ticket.detail)
-                    .foregroundStyle(.secondary)
+                detailBody
                     .padding(.top, 4)
-                    .textSelection(.enabled)
             }
         }
+    }
+
+    /// Description rendering. Imported tickets carry HTML from Jira — render it
+    /// as an AttributedString to preserve bold/italic/links/lists. Manual
+    /// tickets keep simple plain-text rendering.
+    @ViewBuilder
+    private var detailBody: some View {
+        if ticket.isImported, let attr = JiraText.attributed(from: ticket.detail) {
+            Text(attr)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            Text(ticket.detail)
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+        }
+    }
+
+    /// URL of this ticket in the Jira UI, if we have a base URL configured and
+    /// the ticket has an issue key. Available for any ticket whose ticketId
+    /// looks like a Jira issue key — not just imported ones — so a manually-
+    /// created ticket with `ticketId = "PROJ-123"` also gets the link.
+    private var jiraIssueURL: URL? {
+        guard !ticket.ticketId.isEmpty,
+              let baseURL = settings.baseURL else { return nil }
+        return baseURL.appendingPathComponent("browse/\(ticket.ticketId)")
     }
 
     @ViewBuilder
@@ -728,7 +763,8 @@ struct TicketDetailView: View {
             let issue = try await bridge.getJSON(path, as: JiraIssue.self)
             let cleanSummary = JiraText.plainText(from: issue.fields.summary)
             ticket.name = cleanSummary.isEmpty ? ticket.name : cleanSummary
-            ticket.detail = JiraText.plainText(from: issue.fields.description)
+            // Keep description raw; the detail view renders HTML to AttributedString.
+            ticket.detail = issue.fields.description ?? ""
             if let due = issue.fields.duedate, let parsed = parseISODate(due) {
                 ticket.dueDate = parsed
             } else if issue.fields.duedate == nil {
