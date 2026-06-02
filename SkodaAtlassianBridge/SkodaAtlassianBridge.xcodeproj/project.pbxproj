@@ -1,0 +1,383 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 70;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		AB0000010000000000000001 /* SkodaAtlassianBridgeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000020000000000000001 /* SkodaAtlassianBridgeApp.swift */; };
+		AB0000010000000000000002 /* BridgeSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000020000000000000002 /* BridgeSettings.swift */; };
+		AB0000010000000000000003 /* AtlassianSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000020000000000000003 /* AtlassianSession.swift */; };
+		AB0000010000000000000004 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000020000000000000004 /* MenuBarView.swift */; };
+		AB0000010000000000000005 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000020000000000000005 /* SettingsView.swift */; };
+		AB0000010000000000000006 /* LoginWindowContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000020000000000000006 /* LoginWindowContent.swift */; };
+		AB0000010000000000000007 /* UnixSocketServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000020000000000000007 /* UnixSocketServer.swift */; };
+		AB0000010000000000000008 /* BridgeRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000020000000000000008 /* BridgeRouter.swift */; };
+		AB0000010000000000000009 /* BridgeAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000020000000000000009 /* BridgeAPI.swift */; };
+		AB000001000000000000000A /* TokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000002000000000000000A /* TokenStore.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		AB0000030000000000000001 /* SkodaAtlassianBridge.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SkodaAtlassianBridge.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB0000020000000000000001 /* SkodaAtlassianBridgeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkodaAtlassianBridgeApp.swift; sourceTree = "<group>"; };
+		AB0000020000000000000002 /* BridgeSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeSettings.swift; sourceTree = "<group>"; };
+		AB0000020000000000000003 /* AtlassianSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AtlassianSession.swift; sourceTree = "<group>"; };
+		AB0000020000000000000004 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		AB0000020000000000000005 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		AB0000020000000000000006 /* LoginWindowContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginWindowContent.swift; sourceTree = "<group>"; };
+		AB0000020000000000000007 /* UnixSocketServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnixSocketServer.swift; sourceTree = "<group>"; };
+		AB0000020000000000000008 /* BridgeRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeRouter.swift; sourceTree = "<group>"; };
+		AB0000020000000000000009 /* BridgeAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeAPI.swift; sourceTree = "<group>"; };
+		AB000002000000000000000A /* TokenStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenStore.swift; sourceTree = "<group>"; };
+		AB000002000000000000000B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AB0000040000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		AB0000050000000000000000 = {
+			isa = PBXGroup;
+			children = (
+				AB0000050000000000000001 /* SkodaAtlassianBridge */,
+				AB0000050000000000000099 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AB0000050000000000000099 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AB0000030000000000000001 /* SkodaAtlassianBridge.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AB0000050000000000000001 /* SkodaAtlassianBridge */ = {
+			isa = PBXGroup;
+			children = (
+				AB000002000000000000000B /* Info.plist */,
+				AB0000020000000000000001 /* SkodaAtlassianBridgeApp.swift */,
+				AB0000020000000000000002 /* BridgeSettings.swift */,
+				AB0000020000000000000003 /* AtlassianSession.swift */,
+				AB0000050000000000000002 /* Views */,
+				AB0000050000000000000003 /* IPC */,
+			);
+			path = SkodaAtlassianBridge;
+			sourceTree = "<group>";
+		};
+		AB0000050000000000000002 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				AB0000020000000000000004 /* MenuBarView.swift */,
+				AB0000020000000000000005 /* SettingsView.swift */,
+				AB0000020000000000000006 /* LoginWindowContent.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		AB0000050000000000000003 /* IPC */ = {
+			isa = PBXGroup;
+			children = (
+				AB0000020000000000000007 /* UnixSocketServer.swift */,
+				AB0000020000000000000008 /* BridgeRouter.swift */,
+				AB0000020000000000000009 /* BridgeAPI.swift */,
+				AB000002000000000000000A /* TokenStore.swift */,
+			);
+			path = IPC;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AB0000060000000000000001 /* SkodaAtlassianBridge */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AB0000080000000000000001 /* Build configuration list for PBXNativeTarget "SkodaAtlassianBridge" */;
+			buildPhases = (
+				AB0000070000000000000001 /* Sources */,
+				AB0000040000000000000001 /* Frameworks */,
+				AB0000090000000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SkodaAtlassianBridge;
+			productName = SkodaAtlassianBridge;
+			productReference = AB0000030000000000000001 /* SkodaAtlassianBridge.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AB0000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					AB0000060000000000000001 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = AB0000080000000000000099 /* Build configuration list for PBXProject "SkodaAtlassianBridge" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = AB0000050000000000000000;
+			productRefGroup = AB0000050000000000000099 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AB0000060000000000000001 /* SkodaAtlassianBridge */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AB0000090000000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AB0000070000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AB0000010000000000000001 /* SkodaAtlassianBridgeApp.swift in Sources */,
+				AB0000010000000000000002 /* BridgeSettings.swift in Sources */,
+				AB0000010000000000000003 /* AtlassianSession.swift in Sources */,
+				AB0000010000000000000004 /* MenuBarView.swift in Sources */,
+				AB0000010000000000000005 /* SettingsView.swift in Sources */,
+				AB0000010000000000000006 /* LoginWindowContent.swift in Sources */,
+				AB0000010000000000000007 /* UnixSocketServer.swift in Sources */,
+				AB0000010000000000000008 /* BridgeRouter.swift in Sources */,
+				AB0000010000000000000009 /* BridgeAPI.swift in Sources */,
+				AB000001000000000000000A /* TokenStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		AB0000080000000000000098 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		AB0000080000000000000097 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		AB0000080000000000000096 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SkodaAtlassianBridge/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SkodaAtlassianBridge;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cz.bicisteadm.SkodaAtlassianBridge;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		AB0000080000000000000095 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SkodaAtlassianBridge/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SkodaAtlassianBridge;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cz.bicisteadm.SkodaAtlassianBridge;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AB0000080000000000000099 /* Build configuration list for PBXProject "SkodaAtlassianBridge" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AB0000080000000000000098 /* Debug */,
+				AB0000080000000000000097 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		AB0000080000000000000001 /* Build configuration list for PBXNativeTarget "SkodaAtlassianBridge" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AB0000080000000000000096 /* Debug */,
+				AB0000080000000000000095 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = AB0000000000000000000001 /* Project object */;
+}
