@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct MenuBarContentView: View {
     @ObservedObject var timerState: TimerState
@@ -7,7 +8,12 @@ struct MenuBarContentView: View {
 
     var body: some View {
         Button {
-            WindowOpener.bringMainToFront(openWindow: openWindow)
+            // Two paths: openWindow asks SwiftUI to create/reuse the WindowGroup
+            // window; bringForward flips activation policy and orders the window
+            // in front of foreign apps. Order matters — openWindow first so the
+            // window exists, then bringForward to activate.
+            openWindow(id: WindowIDs.main)
+            WindowOpener.bringForward()
         } label: {
             Label("Open WorklogApp", systemImage: "clock.badge.checkmark")
         }

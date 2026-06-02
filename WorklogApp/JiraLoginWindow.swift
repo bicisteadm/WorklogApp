@@ -161,6 +161,7 @@ private struct JiraWebViewRepresentable: NSViewRepresentable {
 enum WindowIDs {
     static let main = "main"
     static let jiraLogin = "jiraLogin"
+    static let reports = "reports"
 }
 
 /// Read-only NSTextView wrapper for the login window's diagnostic panel.

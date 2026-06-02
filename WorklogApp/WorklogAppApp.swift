@@ -2,16 +2,69 @@ import SwiftUI
 import SwiftData
 import AppKit
 
-class AppDelegate: NSObject, NSApplicationDelegate {
+/// Activation-policy owner. Two transitions:
+///
+/// 1. Cold launch → `.regular`. SwiftUI's `WindowGroup` auto-creates the main
+///    window (because we're a regular Dock app with no LSUIElement). Window
+///    visible, Dock icon visible.
+///
+/// 2. User closes the last window (red X / Cmd-W) → `.accessory`. Dock icon
+///    disappears, app keeps running for the menu bar item. The SwiftUI
+///    `WindowGroup` window is destroyed; reopening recreates it.
+///
+/// 3. Menu bar "Open" → MenuBarContentView calls `openWindow(id: "main")`
+///    from SwiftUI Environment (closure-captured at view evaluation), AND
+///    triggers `WindowOpener.bringForward()` for activation + .regular flip.
+final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Menu-bar-only app: no Dock icon, but window can still be made key/active.
-        NSApp.setActivationPolicy(.accessory)
+        NSApp.setActivationPolicy(.regular)
     }
 
-    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
-        // When the user clicks the (hidden) Dock icon or activates from elsewhere.
-        WindowOpener.bringMainToFront()
+    /// Last window closed → become menu-bar-only. Keep process alive.
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        NSApp.setActivationPolicy(.accessory)
+        return false
+    }
+
+    /// Dock-icon click while .regular and window not visible. The MenuBar button
+    /// is the primary path; this is a fallback.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag {
+            WindowOpener.bringForward()
+        }
         return true
+    }
+}
+
+// MARK: - Window forwarding
+
+/// Helpers for the menu bar "Open" path. The caller must hand us the SwiftUI
+/// `openWindow` action captured from its `@Environment` — that's the only way
+/// to materialize a `WindowGroup` window after it's been closed.
+enum WindowOpener {
+    /// Bring an already-existing main window forward. Does nothing if no window
+    /// exists. (For the "no window" case, the caller posts `openWindow(id:)`
+    /// first; SwiftUI will create the window, then we bring it forward.)
+    @MainActor
+    static func bringForward() {
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        if let window = mainWindow() {
+            if window.isMiniaturized { window.deminiaturize(nil) }
+            window.collectionBehavior.insert(.moveToActiveSpace)
+            window.makeKeyAndOrderFront(nil)
+            window.orderFrontRegardless()
+        }
+    }
+
+    /// Find the first regular titled non-panel window. SwiftUI's WindowGroup
+    /// windows match this.
+    private static func mainWindow() -> NSWindow? {
+        NSApp.windows.first { window in
+            window.canBecomeKey
+                && !(window is NSPanel)
+                && window.styleMask.contains(.titled)
+        }
     }
 }
 
@@ -26,7 +79,12 @@ struct WorklogAppApp: App {
     init() {
         do {
             let schema = Schema([Project.self, Ticket.self, TimeEntry.self, Iteration.self])
-            let dbURL = URL.applicationSupportDirectory.appendingPathComponent("WorklogApp.sqlite")
+            #if DEBUG
+            let dbFile = "WorklogApp-Dev.sqlite"
+            #else
+            let dbFile = "WorklogApp.sqlite"
+            #endif
+            let dbURL = URL.applicationSupportDirectory.appendingPathComponent(dbFile)
             let config = ModelConfiguration(schema: schema, url: dbURL)
             modelContainer = try ModelContainer(for: schema, configurations: config)
         } catch {
@@ -53,7 +111,6 @@ struct WorklogAppApp: App {
         WindowGroup(id: WindowIDs.main) {
             ContentView(timerState: timerState)
                 .frame(minWidth: 800, minHeight: 600)
-                .background(WindowConfigurator())
                 .environmentObject(settings)
                 .environmentObject(jiraBridge)
         }
@@ -79,6 +136,12 @@ struct WorklogAppApp: App {
         }
         .windowResizability(.contentSize)
         .defaultSize(width: 1100, height: 720)
+
+        Window("Time Reports", id: WindowIDs.reports) {
+            ReportsView()
+        }
+        .modelContainer(modelContainer)
+        .defaultSize(width: 1200, height: 720)
     }
 }
 
@@ -94,6 +157,11 @@ private struct MenuBarLabel: View {
     var body: some View {
         HStack(spacing: 4) {
             Image(systemName: iconName)
+            #if DEBUG
+            Text("DEV")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.orange)
+            #endif
             if timerState.isRunning {
                 Text(formatDuration(timerState.elapsed))
                     .monospacedDigit()
@@ -102,65 +170,12 @@ private struct MenuBarLabel: View {
     }
 
     private var iconName: String {
+        #if DEBUG
+        return timerState.isRunning ? (timerState.isPaused ? "hammer.circle" : "hammer.fill") : "hammer"
+        #else
         guard timerState.isRunning else { return "clock" }
         return timerState.isPaused ? "pause.circle" : "timer"
+        #endif
     }
 }
 
-// MARK: - Window configuration & activation
-
-/// Attaches a one-shot configurator to the main window: stable autosave name +
-/// behaviors that ensure the window appears on the *current* Space when summoned.
-private struct WindowConfigurator: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView {
-        let probe = NSView()
-        DispatchQueue.main.async {
-            guard let window = probe.window else { return }
-            window.setFrameAutosaveName("MainWindow")
-            // Allow the window to follow the user across Spaces. Without this,
-            // clicking the menu bar from another desktop opens the window on
-            // the *original* Space and looks broken.
-            window.collectionBehavior.insert(.moveToActiveSpace)
-            window.collectionBehavior.insert(.fullScreenAuxiliary)
-            window.isReleasedWhenClosed = false
-        }
-        return probe
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {}
-}
-
-/// Centralized "show the main window" logic. Handles every quirk of running
-/// `.accessory` activation policy (hidden Dock icon): activates the app, picks
-/// the existing main window if one exists, deminiaturizes, and finally calls
-/// `makeKeyAndOrderFront` on the *active Space*.
-enum WindowOpener {
-    static func bringMainToFront(openWindow: OpenWindowAction? = nil) {
-        // Modern, non-deprecated activation. Replaces NSApp.activate(ignoringOtherApps:).
-        if #available(macOS 14.0, *) {
-            NSApp.activate()
-        } else {
-            NSApp.activate(ignoringOtherApps: true)
-        }
-
-        if let window = mainWindow() {
-            if window.isMiniaturized { window.deminiaturize(nil) }
-            window.collectionBehavior.insert(.moveToActiveSpace)
-            window.makeKeyAndOrderFront(nil)
-            return
-        }
-
-        // No window yet (rare — only if the user explicitly closed it and we lost the ref).
-        // Use SwiftUI's openWindow if we have it; otherwise we can't materialize a WindowGroup
-        // from AppDelegate context, so just leave the app activated — the next click opens it.
-        openWindow?(id: "main")
-    }
-
-    private static func mainWindow() -> NSWindow? {
-        NSApp.windows.first { window in
-            window.canBecomeKey
-                && !(window is NSPanel)
-                && window.styleMask.contains(.titled)
-        }
-    }
-}

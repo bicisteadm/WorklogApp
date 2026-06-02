@@ -110,69 +110,61 @@ struct TicketRowView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .top, spacing: 6) {
-                VStack(alignment: .leading, spacing: 3) {
-                    HStack(spacing: 5) {
-                        if isTimerActiveHere {
-                            Image(systemName: isPaused ? "pause.circle.fill" : "timer")
-                                .font(.caption)
-                                .foregroundStyle(isPaused ? .yellow : .orange)
-                                .symbolEffect(.pulse, options: .repeating, isActive: !isPaused)
-                        }
-                        Text(ticket.name)
-                            .font(.headline)
-                            .lineLimit(1)
-                    }
-
-                    HStack(spacing: 4) {
-                        if !ticket.ticketId.isEmpty {
-                            Text(ticket.ticketId)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 1)
-                                .background(Color.accentColor.opacity(0.08))
-                                .clipShape(RoundedRectangle(cornerRadius: 3))
-                        }
-                        if ticket.isImported {
-                            Image(systemName: "link")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .help("Imported from Jira")
-                        }
-                    }
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                if isTimerActiveHere {
+                    Image(systemName: isPaused ? "pause.circle.fill" : "timer")
+                        .font(.caption)
+                        .foregroundStyle(isPaused ? .yellow : .orange)
+                        .symbolEffect(.pulse, options: .repeating, isActive: !isPaused)
                 }
+                Text(ticket.name)
+                    .font(.headline)
+                    .lineLimit(nil)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                Spacer()
-
-                Text(formatDuration(totalSeconds))
-                    .font(.system(.caption, design: .monospaced).weight(.medium))
-                    .foregroundStyle(totalSeconds > 0 ? Color.accentColor : .secondary)
-                    .monospacedDigit()
+                if totalSeconds > 0 {
+                    Text(formatDuration(totalSeconds))
+                        .font(.system(.caption, design: .monospaced).weight(.medium))
+                        .foregroundStyle(Color.accentColor)
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .fixedSize()
+                }
             }
 
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
+                if !ticket.ticketId.isEmpty {
+                    Text(ticket.ticketId)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                if ticket.isImported {
+                    Image(systemName: "link")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .help("Imported from Jira")
+                }
                 if let project = ticket.project {
                     Label(project.name, systemImage: "folder")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
+                        .lineLimit(1)
                 }
-
                 if let iteration = ticket.iteration {
                     Label(iteration.name, systemImage: iteration.type == .sprint ? "arrow.clockwise" : "flag")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(Color.accentColor.opacity(0.06))
-                        .clipShape(RoundedRectangle(cornerRadius: 3))
+                        .lineLimit(1)
                 }
-
                 if let dueDate = ticket.dueDate {
                     Label(dueDate.formatted(date: .abbreviated, time: .omitted), systemImage: "calendar")
                         .font(.caption2)
-                        .foregroundStyle(dueDate < Date() ? .red : .secondary)
+                        .foregroundStyle(dueDate < Date() ? AnyShapeStyle(.red) : AnyShapeStyle(.tertiary))
+                        .lineLimit(1)
                 }
             }
         }

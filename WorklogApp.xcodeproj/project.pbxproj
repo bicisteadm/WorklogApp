@@ -31,6 +31,7 @@
 		CC10000B2F11000100000004 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC10000A2F11000100000004 /* SettingsView.swift */; };
 		CC10000B2F11000100000005 /* JiraImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC10000A2F11000100000005 /* JiraImporter.swift */; };
 		CC10000B2F11000100000006 /* JiraSyncView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC10000A2F11000100000006 /* JiraSyncView.swift */; };
+		CC10000B2F11000100000007 /* DailySummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC10000A2F11000100000007 /* DailySummaryView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -79,6 +80,7 @@
 		CC10000A2F11000100000004 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		CC10000A2F11000100000005 /* JiraImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JiraImporter.swift; sourceTree = "<group>"; };
 		CC10000A2F11000100000006 /* JiraSyncView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JiraSyncView.swift; sourceTree = "<group>"; };
+		CC10000A2F11000100000007 /* DailySummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailySummaryView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -164,6 +166,7 @@
 				CC00000A2F10000100000009 /* ReportsView.swift */,
 				CC10000A2F11000100000004 /* SettingsView.swift */,
 				CC10000A2F11000100000006 /* JiraSyncView.swift */,
+				CC10000A2F11000100000007 /* DailySummaryView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -339,6 +342,7 @@
 				CC10000B2F11000100000004 /* SettingsView.swift in Sources */,
 				CC10000B2F11000100000005 /* JiraImporter.swift in Sources */,
 				CC10000B2F11000100000006 /* JiraSyncView.swift in Sources */,
+				CC10000B2F11000100000007 /* DailySummaryView.swift in Sources */,
 				CC00000B2F10000100000009 /* ReportsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -507,7 +511,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = WorklogApp;
+				INFOPLIST_KEY_CFBundleDisplayName = "WorklogApp Dev";
 				INFOPLIST_KEY_CFBundleIdentifier = com.example.WorklogApp;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is not required.";
@@ -518,8 +522,8 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = cz.bicisteadm.WorklogApp;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = cz.bicisteadm.WorklogApp.dev;
+				PRODUCT_NAME = "WorklogApp-Dev";
 				SDKROOT = macosx;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.9;

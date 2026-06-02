@@ -8,12 +8,12 @@ struct SidebarView: View {
     @Binding var selectedProject: Project?
     @Binding var selectedIteration: Iteration?
     @Binding var presentedSheet: SheetType?
-    @Binding var showReports: Bool
     @Binding var showImportDB: Bool
     let onExportDB: () -> Void
     let onDeleteProject: (Project) -> Void
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.openWindow) private var openWindow
     @State private var showArchived = false
 
     var body: some View {
@@ -117,7 +117,7 @@ struct SidebarView: View {
         .toolbar {
             ToolbarItem(placement: .automatic) {
                 Button {
-                    showReports = true
+                    openWindow(id: WindowIDs.reports)
                 } label: {
                     Label("Reports", systemImage: "chart.bar.doc.horizontal")
                 }

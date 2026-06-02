@@ -25,7 +25,6 @@ struct ContentView: View {
     @State private var selectedIteration: Iteration?
     @State private var selectedTicket: Ticket?
     @State private var presentedSheet: SheetType?
-    @State private var showReports = false
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @AppStorage("sidebarWidth") private var sidebarWidth: Double = 200
     @AppStorage("contentWidth") private var contentWidth: Double = 280
@@ -33,6 +32,7 @@ struct ContentView: View {
     @State private var showImportDB = false
     @State private var showBackupAlert = false
     @State private var backupMessage = ""
+    @AppStorage("showDailySummary") private var showDailySummary: Bool = false
 
     private var filteredTickets: [Ticket] {
         var result = tickets
@@ -86,7 +86,6 @@ struct ContentView: View {
                 selectedProject: $selectedProject,
                 selectedIteration: $selectedIteration,
                 presentedSheet: $presentedSheet,
-                showReports: $showReports,
                 showImportDB: $showImportDB,
                 onExportDB: exportDatabaseAction,
                 onDeleteProject: deleteProject
@@ -122,9 +121,20 @@ struct ContentView: View {
                 ContentUnavailableView("Select a ticket", systemImage: "ticket")
             }
         }
-        .sheet(isPresented: $showReports) {
-            NavigationStack {
-                ReportsView()
+        .inspector(isPresented: $showDailySummary) {
+            DailySummaryView(
+                activeProjectID: timerState.currentTicket?.project?.persistentModelID
+            )
+            .inspectorColumnWidth(min: 240, ideal: 280, max: 400)
+        }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showDailySummary.toggle()
+                } label: {
+                    Image(systemName: "chart.bar.doc.horizontal")
+                }
+                .help("Daily summary")
             }
         }
         .sheet(item: $presentedSheet) { sheet in
