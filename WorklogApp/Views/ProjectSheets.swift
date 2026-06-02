@@ -73,6 +73,11 @@ struct EditProjectView: View {
         _jiraJQL = State(initialValue: project.jiraJQL)
     }
 
+    private var jqlChanged: Bool {
+        jiraJQL.trimmingCharacters(in: .whitespacesAndNewlines)
+            != project.jiraJQL.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Edit Project")
@@ -122,6 +127,20 @@ struct EditProjectView: View {
                     Text("Last synced: \(last.formatted(date: .abbreviated, time: .shortened))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                }
+
+                if jqlChanged && project.lastJiraSync != nil {
+                    HStack(alignment: .top, spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Text("Changing the JQL affects what the next sync sees. Imported tickets that fall outside the new query will be deleted (or kept as orphans if they have time entries).")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(8)
+                    .background(Color.orange.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
             }
 

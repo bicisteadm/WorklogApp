@@ -120,6 +120,8 @@ struct JiraSyncView: View {
                 }
                 summaryLine("Tickets created", summary.ticketsCreated, color: .green)
                 summaryLine("Tickets updated", summary.ticketsUpdated, color: .blue)
+                summaryLine("Tickets deleted", summary.ticketsDeleted, color: .red)
+                summaryLine("Tickets orphaned (kept — has time entries)", summary.ticketsOrphaned, color: .orange)
                 summaryLine("Sprints created", summary.sprintsCreated, color: .green)
                 summaryLine("Sprints updated", summary.sprintsUpdated, color: .blue)
                 if !summary.errors.isEmpty {

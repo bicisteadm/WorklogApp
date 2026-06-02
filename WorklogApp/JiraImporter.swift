@@ -319,6 +319,8 @@ final class JiraImporter: ObservableObject {
     struct Summary: Equatable {
         var ticketsCreated = 0
         var ticketsUpdated = 0
+        var ticketsDeleted = 0    // imported, no entries, removed from JQL → safe to drop
+        var ticketsOrphaned = 0   // imported, gone from JQL, but has time entries → kept
         var sprintsCreated = 0
         var sprintsUpdated = 0
         var fetched = 0
@@ -407,8 +409,17 @@ final class JiraImporter: ObservableObject {
         let projectIterations = project.iterations
         let projectTickets = project.tickets
 
+        // Track which imported tickets the JQL still returns. Anything imported
+        // but missing from this set after the loop is a candidate for cleanup.
+        // Match by Jira issue key (matches the upsert path) AND by stable
+        // jiraIssueId (survives key changes when issues are moved between projects).
+        var seenKeys: Set<String> = []
+        var seenIssueIds: Set<String> = []
+
         for (idx, issue) in allIssues.enumerated() {
             phase = .applying(processed: idx, total: allIssues.count)
+            seenKeys.insert(issue.key)
+            seenIssueIds.insert(issue.id)
 
             // Sprint resolution
             var iteration: Iteration? = nil
@@ -493,6 +504,26 @@ final class JiraImporter: ObservableObject {
                 ticket.jiraLastSync = Date()
                 context.insert(ticket)
                 summary.ticketsCreated += 1
+            }
+        }
+
+        // 5) Reconcile: imported tickets that the current JQL no longer returns.
+        //    With no entries → safe to delete (nothing of the user's is lost).
+        //    With entries → keep as orphan so the time logs survive; user can
+        //    delete manually if they really want.
+        for ticket in projectTickets where ticket.isImported {
+            let stillPresent: Bool = {
+                if seenKeys.contains(ticket.ticketId) { return true }
+                if let issueId = ticket.jiraIssueId, seenIssueIds.contains(issueId) { return true }
+                return false
+            }()
+            if stillPresent { continue }
+
+            if ticket.entries.isEmpty {
+                context.delete(ticket)
+                summary.ticketsDeleted += 1
+            } else {
+                summary.ticketsOrphaned += 1
             }
         }
 
